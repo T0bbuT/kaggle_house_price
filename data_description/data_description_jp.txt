@@ -1,0 +1,545 @@
+Here’s the translation of your provided text into Japanese:
+
+---
+
+**MSSubClass:** 売却に関与する住居の種類を特定します。
+
+```
+20   1階建て 1946年以降のすべてのスタイル
+30   1階建て 1945年以前
+40   1階建て 完成した屋根裏部屋 すべての年齢
+45   1.5階建て - 未完成 すべての年齢
+50   1.5階建て 完成 すべての年齢
+60   2階建て 1946年以降
+70   2階建て 1945年以前
+75   2.5階建て すべての年齢
+80   スプリットまたはマルチレベル
+85   スプリットホワイエ
+90   デュープレックス - すべてのスタイルと年齢
+120  1階建て PUD（計画ユニット開発） - 1946年以降
+150  1.5階建て PUD - すべての年齢
+160  2階建て PUD - 1946年以降
+180  PUD - マルチレベル - スプリットレベル/ホワイエを含む
+190  2世帯転換 - すべてのスタイルと年齢
+```
+
+**MSZoning:** 売却の一般的なゾーニング分類を特定します。
+
+```
+A   農業
+C   商業
+FV  フローティングビレッジ住宅
+I   工業
+RH  住宅高密度
+RL  住宅低密度
+RP  住宅低密度パーク
+RM  住宅中密度
+```
+
+**LotFrontage:** 物件に接続されている通りの線形フィート
+
+**LotArea:** 敷地面積（平方フィート）
+
+**Street:** 物件への道路アクセスの種類
+
+```
+Grvl   砂利
+Pave   舗装
+```
+
+**Alley:** 物件への路地アクセスの種類
+
+```
+Grvl   砂利
+Pave   舗装
+NA     路地アクセスなし
+```
+
+**LotShape:** 物件の一般的な形状
+
+```
+Reg   正規
+IR1   やや不規則
+IR2   中程度の不規則
+IR3   不規則
+```
+
+**LandContour:** 物件の平坦さ
+
+```
+Lvl   ほぼ平坦
+Bnk   傾斜 - 道路から建物への急な上昇
+HLS   山側 - 側面から側面への急な傾斜
+Low   凹地
+```
+
+**Utilities:** 利用可能なユーティリティの種類
+
+```
+AllPub   すべての公共ユーティリティ（E,G,W,& S）
+NoSewr   電気、ガス、水（浸水タンク）
+NoSeWa   電気とガスのみ
+ELO      電気のみ
+```
+
+**LotConfig:** 敷地の構成
+
+```
+Inside    内部敷地
+Corner    角地
+CulDSac   くぼみ
+FR2       物件の2面に接する
+FR3       物件の3面に接する
+```
+
+**LandSlope:** 物件の傾斜
+
+```
+Gtl   緩やかな傾斜
+Mod   中程度の傾斜
+Sev   急な傾斜
+```
+
+**Neighborhood:** エイムズ市内の物理的な場所
+
+```
+Blmngtn  ブルーミントンハイツ
+Blueste  ブルーステム
+BrDale   ブリアーダル
+BrkSide  ブルックサイド
+ClearCr  クリアクリーク
+CollgCr  カレッジクリーク
+Crawfor  クローガード
+Edwards  エドワーズ
+Gilbert  ギルバート
+IDOTRR   アイオワDOTと鉄道
+MeadowV  メドウビレッジ
+Mitchel  ミッチェル
+Names     ノースエイムズ
+NoRidge  ノースリッジ
+NPkVill  ノースパークビラ
+NridgHt  ノースリッジハイツ
+NWAmes   ノースウエストエイムズ
+OldTown  オールドタウン
+SWISU    アイオワ州立大学の南と西
+Sawyer   ソーヤー
+SawyerW  ソーヤーウエスト
+Somerst  サマセット
+StoneBr  ストーンブルック
+Timber   ティンバーランド
+Veenker  ビーンカー
+```
+
+**Condition1:** 様々な条件への近接性
+
+```
+Artery    幹線道路に隣接
+Feedr     フィーダー道路に隣接
+Norm      通常
+RRNn      北南鉄道から200フィート以内
+RRAn      北南鉄道に隣接
+PosN      ポジティブなオフサイト機能近く - 公園、緑地帯など
+PosA      ポジティブなオフサイト機能に隣接
+RRNe      東西鉄道から200フィート以内
+RRAe      東西鉄道に隣接
+```
+
+**Condition2:** 様々な条件への近接性（複数が存在する場合）
+
+```
+Artery    幹線道路に隣接
+Feedr     フィーダー道路に隣接
+Norm      通常
+RRNn      北南鉄道から200フィート以内
+RRAn      北南鉄道に隣接
+PosN      ポジティブなオフサイト機能近く - 公園、緑地帯など
+PosA      ポジティブなオフサイト機能に隣接
+RRNe      東西鉄道から200フィート以内
+RRAe      東西鉄道に隣接
+```
+
+**BldgType:** 住居の種類
+
+```
+1Fam      一戸建て
+2FmCon    二世帯転換; もともとは一戸建てとして建設
+Duplx     デュープレックス
+TwnhsE    タウンハウス端ユニット
+TwnhsI    タウンハウス内部ユニット
+```
+
+**HouseStyle:** 住居のスタイル
+
+```
+1Story   1階建て
+1.5Fin   1.5階建て: 2階レベル完成
+1.5Unf   1.5階建て: 2階レベル未完成
+2Story   2階建て
+2.5Fin   2.5階建て: 2階レベル完成
+2.5Unf   2.5階建て: 2階レベル未完成
+SFoyer    スプリットホワイエ
+SLvl      スプリットレベル
+```
+
+**OverallQual:** 家全体の材質と仕上げを評価します
+
+```
+10   非常に優れた
+9    優れた
+8    非常に良い
+7    良い
+6    平均以上
+5    平均
+4    平均以下
+3    可
+2    劣る
+1    非常に劣る
+```
+
+**OverallCond:** 家全体の状態を評価します
+
+```
+10   非常に優れた
+9    優れた
+8    非常に良い
+7    良い
+6    平均以上
+5    平均
+4    平均以下
+3    可
+2    劣る
+1    非常に劣る
+```
+
+**YearBuilt:** 元の建設日
+
+**YearRemodAdd:** リモデリング日（リモデリングや追加がない場合は建設日と同じ）
+
+**RoofStyle:** 屋根の種類
+
+```
+Flat      平坦
+Gable     尖屋根
+Gambrel   ガンブレル（納屋）
+Hip       寄棟屋根
+Mansard   マンサード
+Shed      小屋
+```
+
+**RoofMatl:** 屋根材
+
+```
+ClyTile   粘土またはタイル
+CompShg   標準（複合）シングル
+Membran   メンブレン
+Metal     金属
+Roll      ロール
+Tar&Grv   砂利とタール
+WdShake   木製シェイク
+WdShngl   木製シングル
+```
+
+**Exterior1st:** 家の外装カバー
+
+```
+AsbShng   アスベストシングル
+AsphShn   アスファルトシングル
+BrkComm   コモンレンガ
+BrkFace   フェ
+
+イスレンガ
+CemntBd  セメントボード
+HdBoard   硬材ボード
+ImStucc  合成スタッコ
+MetalSd   金属サイディング
+Plywood   合板
+VinylSd  ビニールサイディング
+Wd Sdng   木製サイディング
+Wd Shng   木製シングル
+```
+
+**Exterior2nd:** 追加の外装カバー
+
+```
+AsbShng   アスベストシングル
+AsphShn   アスファルトシングル
+BrkComm   コモンレンガ
+BrkFace   フェイスレンガ
+CemntBd  セメントボード
+HdBoard   硬材ボード
+ImStucc  合成スタッコ
+MetalSd   金属サイディング
+Plywood   合板
+VinylSd  ビニールサイディング
+Wd Sdng   木製サイディング
+Wd Shng   木製シングル
+```
+
+**MasVnrType:** 外壁の仕上げ
+
+```
+None      なし
+BrkCmn    コモンレンガ
+BrkFace   フェイスレンガ
+Cment     セメント
+Stone     石材
+```
+
+**MasVnrArea:** 外壁仕上げ面積（平方フィート）
+
+**ExterQual:** 外装材質の質
+
+```
+Gd   良い
+TA   普通
+Fa   劣る
+```
+
+**ExterCond:** 外装の状態
+
+```
+Gd   良い
+TA   普通
+Fa   劣る
+```
+
+**Foundation:** 基礎の種類
+
+```
+BrkTil   ブリックタイル
+CBlock    コンクリートブロック
+PConc     プレキャストコンクリート
+Slab      スラブ
+Stone     石
+Wood     木材
+```
+
+**BsmtQual:** 地下室の高さ
+
+```
+Gd   良い
+TA   普通
+Fa   劣る
+No   地下室なし
+```
+
+**BsmtCond:** 地下室の状態
+
+```
+Gd   良い
+TA   普通
+Fa   劣る
+No   地下室なし
+```
+
+**BsmtExposure:** 地下室の露出
+
+```
+Gd   良い
+TA   普通
+Fa   劣る
+No   地下室なし
+```
+
+**BsmtFinType1:** 地下室の仕上げタイプ1
+
+```
+GLQ   良好な仕上げ
+ALQ   平均的な仕上げ
+BLQ   劣る仕上げ
+Rec   地下室のリクリエーション
+Unf   未仕上げ
+No   地下室なし
+```
+
+**BsmtFinSF1:** 地下室仕上げ面積（平方フィート）
+
+**BsmtFinType2:** 地下室の仕上げタイプ2
+
+```
+GLQ   良好な仕上げ
+ALQ   平均的な仕上げ
+BLQ   劣る仕上げ
+Rec   地下室のリクリエーション
+Unf   未仕上げ
+No   地下室なし
+```
+
+**BsmtFinSF2:** 地下室仕上げ面積2（平方フィート）
+
+**BsmtUnfSF:** 地下室未仕上げ面積（平方フィート）
+
+**TotalBsmtSF:** 地下室の合計面積（平方フィート）
+
+**Heating:** 暖房タイプ
+
+```
+GasA    ガスエリア
+GasW    ガスウォーターヒーター
+Grav     重力
+OthW    その他の暖房
+Wall     壁暖房
+```
+
+**HeatingQC:** 暖房の質
+
+```
+Ex   優れた
+Gd   良い
+TA   普通
+Fa   劣る
+No   暖房なし
+```
+
+**CentralAir:** 中央空調
+
+```
+Y   はい
+N   いいえ
+```
+
+**Electrical:** 電気システム
+
+```
+SBrkr   サブブレーカー
+FuseA   融解式ブレーカー
+FuseF   融解式ブレーカー
+Mix     混合型
+```
+
+**1stFlrSF:** 1階の平方フィート
+
+**2ndFlrSF:** 2階の平方フィート
+
+**LowQualFinSF:** 低品質仕上げ面積（平方フィート）
+
+**GrLivArea:** 生計面積（平方フィート）
+
+**BsmtFullBath:** 地下室のフルバスルーム数
+
+**BsmtHalfBath:** 地下室のハーフバスルーム数
+
+**FullBath:** フルバスルーム数
+
+**HalfBath:** ハーフバスルーム数
+
+**BedroomAbvGr:** 地上の寝室数
+
+**KitchenAbvGr:** 地上のキッチン数
+
+**KitchenQual:** キッチンの質
+
+```
+Ex   優れた
+Gd   良い
+TA   普通
+Fa   劣る
+No   キッチンなし
+```
+
+**TotRmsAbvGrd:** 地上の総部屋数
+
+**Functional:** 住宅の機能性
+
+```
+Typ   通常
+Min1  最小限の欠陥
+Min2  いくつかの欠陥
+Mod   中程度の欠陥
+Maj1  大きな欠陥
+Maj2  非常に大きな欠陥
+Sev   深刻な欠陥
+```
+
+**Fireplaces:** 暖炉の数
+
+**GarageType:** ガレージの種類
+
+```
+Attchd  接続された
+Detchd  別棟
+BuiltIn  内蔵型
+CarPort  カーポート
+NA      ガレージなし
+```
+
+**GarageFinish:** ガレージの仕上げ
+
+```
+RFn   完成
+Unf   未仕上げ
+NA    ガレージなし
+```
+
+**GarageCars:** ガレージ車両数
+
+**GarageArea:** ガレージ面積（平方フィート）
+
+**GarageQual:** ガレージの質
+
+```
+Ex   優れた
+Gd   良い
+TA   普通
+Fa   劣る
+No   ガレージなし
+```
+
+**PoolQC:** プールの質
+
+```
+Ex   優れた
+Gd   良い
+TA   普通
+Fa   劣る
+No   プールなし
+```
+
+**Fence:** フェンスの質
+
+```
+GdPrv   良いプライバシー
+MnPrv   中程度のプライバシー
+GdWo   良い境界
+MnWw   中程度の境界
+No      フェンスなし
+```
+
+**MiscFeature:** その他の特徴
+
+```
+Elev   エレベーター
+Gar2   2台目のガレージ
+Othr   その他
+Shed   小屋
+NA    なし
+```
+
+**MiscVal:** その他の特徴の価値（ドル）
+
+**MoSold:** 売却月（1-12）
+
+**YrSold:** 売却年（2006-2010）
+
+**SaleType:** 売却の種類
+
+```
+WD    売却
+CWD   現金売却
+VWD   現金売却（差押）
+New   新築
+```
+
+**SaleCondition:** 売却の状況
+
+```
+Normal     通常の売却
+Abnorml    異常な売却 - 事務所、親戚
+AdjLand    隣接土地の売却
+Alloca     発表された売却
+Family     家族による売却
+```
+
+---
+
+If you need any adjustments or additional translations, feel free to ask!
