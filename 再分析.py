@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[6]:
+# In[2]:
 
 
 import os
@@ -33,7 +33,7 @@ print(f"df_train.shape: {df_test.shape}")
 display(df_test.head(5))
 
 
-# In[7]:
+# In[3]:
 
 
 print("-" * 10, "df_train.info()", "-" * 10)
@@ -43,7 +43,7 @@ print("-" * 10, "df_test.info()", "-" * 10)
 print(df_test.info())
 
 
-# In[8]:
+# In[4]:
 
 
 # # ydata_profilingを使う場合。時間かかるので注意
@@ -58,7 +58,7 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[9]:
+# In[5]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -71,7 +71,7 @@ plt.suptitle("SalePriceの分布")
 plt.show()
 
 
-# In[10]:
+# In[6]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -83,11 +83,11 @@ corr_matrix = df_train.corr(numeric_only=True)
 plt.figure(figsize=(12, 10))
 sns.heatmap(abs(corr_matrix), annot=True, fmt=".1f", annot_kws={"fontsize": 6})
 
-plt.suptitle("訓練データの相関係数(絶対値)行列")
+plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数を除く")
 plt.show()
 
 
-# In[11]:
+# In[7]:
 
 
 threshold = 0.6
@@ -117,7 +117,7 @@ plt.show()
 
 # # 2. 前処理(とりあえずlightGBMで回すために)
 
-# In[12]:
+# In[8]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -139,11 +139,28 @@ oe = OrdinalEncoder()
 df_train[object_columns] = oe.fit_transform(df_train[object_columns])
 df_test[object_columns] = oe.fit_transform(df_test[object_columns])
 
-# display(df_train_pre_encoding.head(10))
-# display(df_train.head(10))
+print("df_train_pre_encoding")
+display(df_train_pre_encoding.head(3))
+print("df_train")
+display(df_train.head(3))
 
 
-# In[13]:
+# In[9]:
+
+
+# # ラベルエンコーディング後に改めて相関係数行列を表示してみる
+# corr_matrix = df_train.corr(numeric_only=True)
+
+# plt.figure(figsize=(24, 20))
+# sns.heatmap(abs(corr_matrix), annot=True, fmt=".1f", annot_kws={"fontsize": 6})
+
+# カテゴリ変数を含めて相関をみたいのなら、カテゴリ変数の順位関係を考慮したラベル付けをしておかねばなるまい
+# しかし現状はそうはなっていない…
+# plt.suptitle("訓練データの相関係数(絶対値)行列_ラベルエンコーディング後")
+# plt.show()
+
+
+# In[22]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -153,12 +170,19 @@ y = df_train["SalePrice"]
 kf = KFold(n_splits=4, shuffle=True, random_state=42)
 
 scores = []
+params = {
+    "max_depth": 20,
+    "learning_rate": 0.1,
+}
+# パラメータチューニングにはoptunaというのを使うと良いらしい
+# https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
+# https://qiita.com/tetsuro731/items/76434194bab336a97172
 
 for tr_idx, va_idx in kf.split(X):
     X_tr, X_va = X.iloc[tr_idx], X.iloc[va_idx]
     y_tr, y_va = y.iloc[tr_idx], y.iloc[va_idx]
 
-    model = LGBMRegressor(max_depth=-1)
+    model = LGBMRegressor(**params)
     # GBDTのパラメータについて。https://knknkn.hatenablog.com/entry/2021/06/29/125226
     model.fit(X_tr, y_tr)
     y_pred = model.predict(X_va)
@@ -167,20 +191,19 @@ for tr_idx, va_idx in kf.split(X):
 
 print(f"\n\nThe score is {np.mean(scores)}.")
 
-# 次にやること：max_depthのチューニングってどうやればいいだろう？てか一回さっさと提出してみないか？
 # メモ：[LightGBM] [Warning] No further splits with positive gain, best gain: -infについて
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[14]:
+# In[74]:
 
 
-# 一度このまま提出用のデータを出力してしまおう
-model = LGBMRegressor(max_depth=-1)
-model.fit(X, y)
-sub_pred = model.predict(df_test)
-submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
-submission.to_csv("train_test_submission\submission.csv", index=False)
+# # 一度このまま提出用のデータを出力
+# model = LGBMRegressor(max_depth=-1)
+# model.fit(X, y)
+# sub_pred = model.predict(df_test)
+# submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
+# submission.to_csv(r"train_test_submission\submission.csv", index=False)
 
 
 # In[ ]:
