@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[2]:
+# In[1]:
 
 
 import os
@@ -33,7 +33,7 @@ print(f"df_train.shape: {df_test.shape}")
 display(df_test.head(5))
 
 
-# In[3]:
+# In[2]:
 
 
 print("-" * 10, "df_train.info()", "-" * 10)
@@ -43,7 +43,7 @@ print("-" * 10, "df_test.info()", "-" * 10)
 print(df_test.info())
 
 
-# In[4]:
+# In[3]:
 
 
 # # ydata_profilingを使う場合。時間かかるので注意
@@ -58,7 +58,7 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[5]:
+# In[4]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -71,7 +71,7 @@ plt.suptitle("SalePriceの分布")
 plt.show()
 
 
-# In[6]:
+# In[5]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -87,7 +87,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[7]:
+# In[6]:
 
 
 threshold = 0.6
@@ -117,7 +117,7 @@ plt.show()
 
 # # 2. 前処理(とりあえずlightGBMで回すために)
 
-# In[8]:
+# In[7]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -145,7 +145,7 @@ print("df_train")
 display(df_train.head(3))
 
 
-# In[9]:
+# In[8]:
 
 
 # # ラベルエンコーディング後に改めて相関係数行列を表示してみる
@@ -160,7 +160,7 @@ display(df_train.head(3))
 # plt.show()
 
 
-# In[22]:
+# In[9]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -171,7 +171,7 @@ kf = KFold(n_splits=4, shuffle=True, random_state=42)
 
 scores = []
 params = {
-    "max_depth": 20,
+    "max_depth": 19,
     "learning_rate": 0.1,
 }
 # パラメータチューニングにはoptunaというのを使うと良いらしい
@@ -195,7 +195,7 @@ print(f"\n\nThe score is {np.mean(scores)}.")
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[74]:
+# In[10]:
 
 
 # # 一度このまま提出用のデータを出力
