@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[1]:
+# In[ ]:
 
 
 import os
@@ -33,7 +33,7 @@ print(f"df_train.shape: {df_test.shape}")
 display(df_test.head(5))
 
 
-# In[2]:
+# In[ ]:
 
 
 print("-" * 10, "df_train.info()", "-" * 10)
@@ -58,20 +58,19 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[4]:
+# In[ ]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
 print(df_train["SalePrice"].describe())
 
 # SalePriceの分布
-plt.hist(x=df_train["SalePrice"], bins=50)
-plt.xlabel("SalePrice")
+sns.histplot(df_train["SalePrice"], kde=True)
 plt.suptitle("SalePriceの分布")
 plt.show()
 
 
-# In[5]:
+# In[ ]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -87,7 +86,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[6]:
+# In[ ]:
 
 
 threshold = 0.6
@@ -96,9 +95,6 @@ high_corr_cols = (
     .sort_values(ascending=False)
     .index
 ).drop("SalePrice")
-
-# これらについて、SalePriceに対する散布図を描写したいね
-# matplotlibのsubplotsの取り扱いに習熟したい
 
 # プロットのサイズを指定 (行数と列数は自由に調整可能)
 num_cols = len(high_corr_cols)
@@ -114,10 +110,27 @@ plt.suptitle(f"SalePriceとの相関係数の絶対値が{threshold}以上の特
 plt.tight_layout()
 plt.show()
 
+# 外れ値が同じデータを指しているのかどうかをパパッと確認したいが…このままだと出来ない
+# plotlyとかいうインタラクティブにグラフを描けるライブラリを使うと良いかも？
+# とりあえず、もう一度スターター？見るか
 
-# # 2. 前処理(とりあえずlightGBMで回すために)
+
+# # 2. 前処理
 
 # In[7]:
+
+
+# 特徴量エンジニアリング
+# 新しい特徴量（'TotalSF'：'TotalBsmtSF'、'1stFlrSF'、'2ndFlrSF'を合計したもの。）の作成
+
+datasets = [df_train, df_test]
+for i in range(len(datasets)):
+    datasets[i]["TotalSF"] = (
+        datasets[i]["TotalBsmtSF"] + datasets[i]["1stFlrSF"] + datasets[i]["2ndFlrSF"]
+    )
+
+
+# In[ ]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -126,7 +139,7 @@ plt.show()
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
-from lightgbm import LGBMRegressor
+from lightgbm import LGBMRegressor, plot_tree
 from sklearn.metrics import root_mean_squared_error as rmse
 
 # object型のデータが入っている列を抽出
@@ -145,7 +158,7 @@ print("df_train")
 display(df_train.head(3))
 
 
-# In[8]:
+# In[9]:
 
 
 # # ラベルエンコーディング後に改めて相関係数行列を表示してみる
@@ -160,7 +173,7 @@ display(df_train.head(3))
 # plt.show()
 
 
-# In[9]:
+# In[ ]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -170,10 +183,8 @@ y = df_train["SalePrice"]
 kf = KFold(n_splits=4, shuffle=True, random_state=42)
 
 scores = []
-params = {
-    "max_depth": 19,
-    "learning_rate": 0.1,
-}
+# params = {}
+params = {"max_depth": 19, "learning_rate": 0.1}
 # パラメータチューニングにはoptunaというのを使うと良いらしい
 # https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
 # https://qiita.com/tetsuro731/items/76434194bab336a97172
@@ -195,15 +206,21 @@ print(f"\n\nThe score is {np.mean(scores)}.")
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[10]:
+# In[ ]:
 
 
-# # 一度このまま提出用のデータを出力
-# model = LGBMRegressor(max_depth=-1)
-# model.fit(X, y)
-# sub_pred = model.predict(df_test)
-# submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
-# submission.to_csv(r"train_test_submission\submission.csv", index=False)
+plot_tree(model, tree_index=0, figsize=(20, 10))  # 1番目の木の様子を出力
+
+
+# In[ ]:
+
+
+# 一度このまま提出用のデータを出力
+model = LGBMRegressor(max_depth=-1)
+model.fit(X, y)
+sub_pred = model.predict(df_test)
+submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
+submission.to_csv(r"train_test_submission\submission.csv", index=False)
 
 
 # In[ ]:
