@@ -106,7 +106,7 @@ for ax, col in zip(axes.flatten(), high_corr_cols):
     ax.set_title(f"{col} vs SalePrice. 相関係数: {corr_matrix["SalePrice"][col]:.3f}")
 
 # グラフのレイアウトを自動調整
-plt.suptitle(f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図")
+plt.suptitle(f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n")
 plt.tight_layout()
 plt.show()
 
@@ -141,6 +141,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 from lightgbm import LGBMRegressor, plot_tree
 from sklearn.metrics import root_mean_squared_error as rmse
+from sklearn.metrics import mean_absolute_percentage_error as mape
 
 # object型のデータが入っている列を抽出
 object_columns = df_train.select_dtypes(include="object").columns
@@ -189,7 +190,9 @@ params = {"max_depth": 19, "learning_rate": 0.1}
 # https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
 # https://qiita.com/tetsuro731/items/76434194bab336a97172
 
-for tr_idx, va_idx in kf.split(X):
+for fold_idx, (tr_idx, va_idx) in enumerate(kf.split(X)):
+    print(f"分割 {fold_idx + 1} / {kf.n_splits}")
+
     X_tr, X_va = X.iloc[tr_idx], X.iloc[va_idx]
     y_tr, y_va = y.iloc[tr_idx], y.iloc[va_idx]
 
@@ -197,19 +200,80 @@ for tr_idx, va_idx in kf.split(X):
     # GBDTのパラメータについて。https://knknkn.hatenablog.com/entry/2021/06/29/125226
     model.fit(X_tr, y_tr)
     y_pred = model.predict(X_va)
+
     score = rmse(np.log10(y_pred), np.log10(y_va))
+    print(f"スコア(rmse(np.log10(y_pred), np.log10(y_va)): {score}")
+    mape_ = mape(y_pred, y_va) * 100
+    print(f"MAPE (平均絶対誤差率): {mape_:.2f}%")
+    rmspe = np.sqrt(np.mean(np.square((y_va - y_pred) / y_va))) * 100
+    print(f"RMSPE (平均平方二乗誤差率): {rmspe:.2f}%")
+    print("\n")
+
     scores.append(score)
 
-print(f"\n\nThe score is {np.mean(scores)}.")
+print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}.")
 
 # メモ：[LightGBM] [Warning] No further splits with positive gain, best gain: -infについて
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
+# MAPE（平均絶対誤差率）とRMSPE（平均平方二乗誤差率）は、どちらもモデルの予測精度をパーセンテージで表現する指標ですが、それぞれの特徴と捉え方に違いがあります。
+# 
+# ### 特徴の違い
+# 
+# 1. **MAPE（Mean Absolute Percentage Error）**:
+#    - MAPEは各データポイントの絶対誤差の割合を平均したものです。
+#    - 計算式：
+#      \[
+#      \text{MAPE} = \frac{1}{n} \sum_{i=1}^{n} \left| \frac{y_i - \hat{y}_i}{y_i} \right| \times 100
+#      \]
+#    - **直感的なイメージ**: MAPEは、予測値が実際の値に対してどれだけ外れているかを「平均的に」示します。外れ値の影響を受けにくいため、安定した誤差の評価に適しています。
+#    - **メリット**: 解釈が簡単で、「平均して予測が実際の値から○○%ずれている」と直感的に理解しやすいです。
+#    - **デメリット**: 実際の値がゼロに近い場合、誤差が無限大になるため、ゼロやゼロに近い値が含まれているデータには不向きです。
+# 
+# 2. **RMSPE（Root Mean Square Percentage Error）**:
+#    - RMSPEは各データポイントの誤差率を平方して平均し、その平方根を取ったものです。
+#    - 計算式：
+#      \[
+#      \text{RMSPE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} \left( \frac{y_i - \hat{y}_i}{y_i} \right)^2} \times 100
+#      \]
+#    - **直感的なイメージ**: RMSPEは、予測誤差が大きいデータポイントに対して、より強いペナルティを課します。つまり、大きな誤差に対して敏感であり、外れ値の影響を大きく受けます。
+#    - **メリット**: 大きな誤差をより重視するため、予測精度を厳しく評価できます。外れ値や大きな誤差が特に重要な場合に適しています。
+#    - **デメリット**: 外れ値の影響を強く受けるため、データにノイズが多い場合は過度に悪い評価が出ることがあります。
+# 
+# ### 直感的なイメージの違い
+# 
+# - **MAPE** は、「平均的なずれ」を強調します。どのデータポイントにおいても均等に誤差を見ているため、大きな誤差よりも「全体的な傾向」に重きを置きます。外れ値が少なく、すべてのデータが均等に重要な場合に有用です。
+#   
+# - **RMSPE** は、「大きなずれ」を強調します。誤差を平方しているため、外れ値（極端にずれた値）の影響が大きくなります。これは、誤差が非常に大きい場合にはその影響を強調したい場合に有効です。
+# 
+# ### 適切な使い分けの例
+# 
+# - **MAPE** は、予測が多少ずれても問題ない場合、または均等に重要なデータセットを扱うときに適しています。例えば、売上予測のように、大きな外れ値があっても全体の傾向を把握したい場合に使うことが多いです。
+# 
+# - **RMSPE** は、外れ値を重視したい場合や、極端な誤差が許容できない状況で使用するのが良いです。例えば、医療データや金融データのように、大きな誤差が許されないケースに適しています。
+# 
+# このように、MAPEとRMSPEはそれぞれの用途やデータの特性に応じて使い分けるべき指標です。どちらを使用するかは、あなたのデータや分析目的によって決めると良いでしょう。
+
 # In[ ]:
 
 
-plot_tree(model, tree_index=0, figsize=(20, 10))  # 1番目の木の様子を出力
+# 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
+tree_idx = 0
+print(f"{tree_idx + 1}番目の木の様子は以下の通り")
+
+
+plot_tree(model, tree_index=tree_idx, figsize=(20, 10))
+
+# 特徴量重要度
+df_feature_importances = pd.DataFrame(
+    {"feature_name": model.feature_name_, "importance": model.feature_importances_}
+).sort_values("importance", ascending=False)
+
+plt.figure(figsize=(16, 8))
+sns.barplot(data=df_feature_importances, x="feature_name", y="importance")
+plt.xticks(rotation=90)
+plt.show()
 
 
 # In[ ]:
