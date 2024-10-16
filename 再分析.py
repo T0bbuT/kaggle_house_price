@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[ ]:
+# In[1]:
 
 
 import os
@@ -33,7 +33,7 @@ print(f"df_train.shape: {df_test.shape}")
 display(df_test.head(5))
 
 
-# In[ ]:
+# In[2]:
 
 
 print("-" * 10, "df_train.info()", "-" * 10)
@@ -58,7 +58,7 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[ ]:
+# In[4]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -70,7 +70,7 @@ plt.suptitle("SalePriceの分布")
 plt.show()
 
 
-# In[ ]:
+# In[5]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -86,7 +86,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[ ]:
+# In[6]:
 
 
 threshold = 0.6
@@ -98,21 +98,25 @@ high_corr_cols = (
 
 # プロットのサイズを指定 (行数と列数は自由に調整可能)
 num_cols = len(high_corr_cols)
-fig, axes = plt.subplots(nrows=(num_cols // 3 + 1), ncols=3, figsize=(15, 5 * (num_cols // 3 + 1)))
+fig, axes = plt.subplots(
+    nrows=(num_cols // 3 + 1), ncols=3, figsize=(15, 5 * (num_cols // 3 + 1))
+)
 
 # high_corr_colsにある特徴量ごとに散布図を描く
 for ax, col in zip(axes.flatten(), high_corr_cols):
-    sns.scatterplot(x=df_train[col], y=df_train["SalePrice"],alpha=0.3 , ax=ax)
+    sns.scatterplot(x=df_train[col], y=df_train["SalePrice"], alpha=0.3, ax=ax)
     ax.set_title(f"{col} vs SalePrice. 相関係数: {corr_matrix["SalePrice"][col]:.3f}")
 
 # グラフのレイアウトを自動調整
-plt.suptitle(f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n")
+plt.suptitle(
+    f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n"
+)
 plt.tight_layout()
 plt.show()
 
 # 外れ値が同じデータを指しているのかどうかをパパッと確認したいが…このままだと出来ない
 # plotlyとかいうインタラクティブにグラフを描けるライブラリを使うと良いかも？
-# とりあえず、もう一度スターター？見るか
+# とりあえず、もう一度スターター？見るかあ
 
 
 # # 2. 前処理
@@ -130,7 +134,7 @@ for i in range(len(datasets)):
     )
 
 
-# In[ ]:
+# In[8]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -174,7 +178,7 @@ display(df_train.head(3))
 # plt.show()
 
 
-# In[ ]:
+# In[10]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -255,7 +259,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # 
 # このように、MAPEとRMSPEはそれぞれの用途やデータの特性に応じて使い分けるべき指標です。どちらを使用するかは、あなたのデータや分析目的によって決めると良いでしょう。
 
-# In[ ]:
+# In[11]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -276,7 +280,7 @@ plt.xticks(rotation=90)
 plt.show()
 
 
-# In[ ]:
+# In[12]:
 
 
 # 一度このまま提出用のデータを出力
