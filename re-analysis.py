@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[25]:
+# In[ ]:
 
 
 import os
@@ -50,20 +50,20 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[26]:
+# In[ ]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[27]:
+# In[ ]:
 
 
 df_train[["TotalBsmtSF", "BsmtUnfSF", "BsmtFinSF1", "BsmtFinSF2"]].head(20)
 
 
-# In[28]:
+# In[ ]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -75,7 +75,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[29]:
+# In[ ]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -91,42 +91,94 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[30]:
+# In[20]:
 
 
-threshold = 0.6
+# threshold = 0.6
+# high_corr_cols = (
+#     corr_matrix["SalePrice"][abs(corr_matrix["SalePrice"]) >= threshold]
+#     .sort_values(ascending=False)
+#     .index
+# ).drop("SalePrice")
+
+# # プロットのサイズを指定 (行数と列数は自由に調整可能)
+# num_cols = len(high_corr_cols)
+# fig, axes = plt.subplots(
+#     nrows=(num_cols // 3 + 1), ncols=3, figsize=(15, 5 * (num_cols // 3 + 1))
+# )
+
+# # high_corr_colsにある特徴量ごとに散布図を描く
+# for ax, col in zip(axes.flatten(), high_corr_cols):
+#     sns.scatterplot(x=df_train[col], y=df_train["SalePrice"], alpha=0.3, ax=ax)
+#     ax.set_title(f"{col} vs SalePrice. 相関係数: {corr_matrix["SalePrice"][col]:.3f}")
+
+# # グラフのレイアウトを自動調整
+# plt.suptitle(
+#     f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n"
+# )
+# plt.tight_layout()
+# plt.show()
+
+# # 外れ値が同じデータを指しているのかどうかをパパッと確認したいが…このままだと出来ない
+# # plotlyとかいうインタラクティブにグラフを描けるライブラリを使うと良いかも？
+# # とりあえず、もう一度スターター？見るか
+
+
+# In[ ]:
+
+
+# plotly版。インデックス番号が一目で確認できる
+
+import plotly.express as px
+import plotly.subplots as sp
+
+threshold = 0.5
 high_corr_cols = (
     corr_matrix["SalePrice"][abs(corr_matrix["SalePrice"]) >= threshold]
     .sort_values(ascending=False)
     .index
 ).drop("SalePrice")
 
-# プロットのサイズを指定 (行数と列数は自由に調整可能)
+# プロットのサイズを指定
 num_cols = len(high_corr_cols)
-fig, axes = plt.subplots(
-    nrows=(num_cols // 3 + 1), ncols=3, figsize=(15, 5 * (num_cols // 3 + 1))
-)
+rows = num_cols // 3 + 1  # 行数
+cols = 3  # 列数
+
+# サブプロットの作成
+fig = sp.make_subplots(
+    rows=rows, 
+    cols=cols, 
+    subplot_titles=[f"{col} vs SalePrice （相関係数{corr_matrix["SalePrice"][col]:.3f}）" for col in high_corr_cols],
+    horizontal_spacing=0.05,
+    vertical_spacing=0.1,
+    )
 
 # high_corr_colsにある特徴量ごとに散布図を描く
-for ax, col in zip(axes.flatten(), high_corr_cols):
-    sns.scatterplot(x=df_train[col], y=df_train["SalePrice"], alpha=0.3, ax=ax)
-    ax.set_title(f"{col} vs SalePrice. 相関係数: {corr_matrix["SalePrice"][col]:.3f}")
+for i, col in enumerate(high_corr_cols):
+    row = i // cols + 1
+    col_num = i % cols + 1
+    scatter = px.scatter(df_train, x=col, y="SalePrice", opacity=0.3, hover_data=[df_train.index])
+    for trace in scatter.data:
+        fig.add_trace(trace, row=row, col=col_num)
+    fig.update_annotations()
 
-# グラフのレイアウトを自動調整
-plt.suptitle(
-    f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n"
+# グラフのタイトルを設定
+fig.update_layout(
+    title_text=f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図",
+    showlegend=False,
+    height=500 * rows,
+    width=1500,
 )
-plt.tight_layout()
-plt.show()
 
-# 外れ値が同じデータを指しているのかどうかをパパッと確認したいが…このままだと出来ない
-# plotlyとかいうインタラクティブにグラフを描けるライブラリを使うと良いかも？
-# とりあえず、もう一度スターター？見るか
+# グラフの表示
+fig.show()
+
+# レイアウト調節 https://data-analytics.fun/2021/06/19/plotly-subplots/
 
 
 # # 2. 前処理
 
-# In[31]:
+# In[8]:
 
 
 # 特徴量エンジニアリング
@@ -176,7 +228,7 @@ for i in range(len(datasets)):
 # df_train[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF"]].head(20)
 
 
-# In[32]:
+# In[ ]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -205,7 +257,7 @@ print("df_train")
 display(df_train.head(3))
 
 
-# In[33]:
+# In[10]:
 
 
 # # ラベルエンコーディング後に改めて相関係数行列を表示してみる
@@ -220,7 +272,7 @@ display(df_train.head(3))
 # plt.show()
 
 
-# In[34]:
+# In[ ]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -263,7 +315,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[35]:
+# In[ ]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -284,7 +336,7 @@ plt.xticks(rotation=90)
 plt.show()
 
 
-# In[36]:
+# In[ ]:
 
 
 # 一度このまま提出用のデータを出力
