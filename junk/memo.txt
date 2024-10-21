@@ -1,3 +1,42 @@
+次にやりたいこと
+
+
+https://www.kaggle.com/code/jesucristo/1-house-prices-solution-top-1
+の特徴量作成を真似たい
+ただし、ちゃんと理解した上で…
+
+あと、.ipynbで算出しているスコアとkaggle側のスコアがぜんぜん違うのも気になる。多分logの底が違う？
+
+
+
+===
+苦労点：
+・特徴量について、外国の住宅特有の耳馴染みのない単語が多く、EDAや特徴量エンジニアリングをする際に苦戦した
+　　・ポーチって何？
+
+
+===
+Index(['MSSubClass', 'MSZoning', 'LotFrontage', 'LotArea', 'Street', 'Alley',
+       'LotShape', 'LandContour', 'Utilities', 'LotConfig', 'LandSlope',
+       'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 'HouseStyle',
+       'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd', 'RoofStyle',
+       'RoofMatl', 'Exterior1st', 'Exterior2nd', 'MasVnrType', 'MasVnrArea',
+       'ExterQual', 'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond',
+       'BsmtExposure', 'BsmtFinType1', 'BsmtFinSF1', 'BsmtFinType2',
+       'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', 'Heating', 'HeatingQC',
+       'CentralAir', 'Electrical', '1stFlrSF', '2ndFlrSF', 'LowQualFinSF',
+       'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath',
+       'BedroomAbvGr', 'KitchenAbvGr', 'KitchenQual', 'TotRmsAbvGrd',
+       'Functional', 'Fireplaces', 'FireplaceQu', 'GarageType', 'GarageYrBlt',
+       'GarageFinish', 'GarageCars', 'GarageArea', 'GarageQual', 'GarageCond',
+       'PavedDrive', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch',
+       'ScreenPorch', 'PoolArea', 'PoolQC', 'Fence', 'MiscFeature', 'MiscVal',
+       'MoSold', 'YrSold', 'SaleType', 'SaleCondition', 'SalePrice'],
+      dtype='object')
+
+
+====
+
 特徴量が多すぎて、それぞれの特徴量についてのグラフを見るだけで日が暮れちまうぞ…
 うーん。なんだかこれでEDAが出来ている気がしないぞ…なんだかデータが多すぎて把握できている気がしない
 どうすれば把握できているような気分になれる？
