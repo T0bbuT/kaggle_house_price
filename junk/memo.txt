@@ -1,12 +1,5 @@
 次にやりたいこと
-
-
-https://www.kaggle.com/code/jesucristo/1-house-prices-solution-top-1
-の特徴量作成を真似たい
-ただし、ちゃんと理解した上で…
-
-あと、.ipynbで算出しているスコアとkaggle側のスコアがぜんぜん違うのも気になる。多分logの底が違う？
-
+・外れ値処理
 
 
 ===

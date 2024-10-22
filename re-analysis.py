@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[ ]:
+# In[2]:
 
 
 import os
@@ -34,7 +34,7 @@ display(df_test.head(5))
 
 print("-" * 10, "df_train.info()", "-" * 10)
 print(df_train.info())
-print("-" * 10, "df_test.info()", "-" * 10)
+print("\n", "-" * 10, "df_test.info()", "-" * 10)
 print(df_test.info())
 
 
@@ -50,20 +50,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[ ]:
+# In[3]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[ ]:
-
-
-df_train[["TotalBsmtSF", "BsmtUnfSF", "BsmtFinSF1", "BsmtFinSF2"]].head(20)
-
-
-# In[ ]:
+# In[4]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -75,7 +69,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[ ]:
+# In[5]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -91,7 +85,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[20]:
+# In[6]:
 
 
 # threshold = 0.6
@@ -124,7 +118,7 @@ plt.show()
 # # とりあえず、もう一度スターター？見るか
 
 
-# In[ ]:
+# In[14]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -178,7 +172,27 @@ fig.show()
 
 # # 2. 前処理
 
-# In[8]:
+# In[12]:
+
+
+# 外れ値処理
+df_train_befdrop = df_train
+df_train = df_train.drop(df_train.index[[523, 1298]])
+
+fig = px.scatter(df_train, x="GrLivArea", y="SalePrice", opacity=0.3, hover_data=[df_train.index])
+
+fig.update_layout(
+    title_text='x="GrLivArea", y="SalePrice"',
+    showlegend=False,
+    height=600,
+    width=700,
+)
+
+# グラフの表示
+fig.show()
+
+
+# In[60]:
 
 
 # 特徴量エンジニアリング
@@ -210,25 +224,16 @@ for i in range(len(datasets)):
         + datasets[i]["OpenPorchSF"]
         + datasets[i]["ScreenPorch"]
     )
-    datasets[i]["hasPool"] = datasets[i]["PoolArea"].apply(
-        lambda x: 1 if x > 0 else 0)
-    datasets[i]["has2ndfloor"] = datasets[i]["2ndFlrSF"].apply(
-        lambda x: 1 if x > 0 else 0
-    )
-    datasets[i]["hasGarage"] = datasets[i]["GarageArea"].apply(
-        lambda x: 1 if x > 0 else 0
-    )
-    datasets[i]["hasBsmt"] = datasets[i]["TotalBsmtSF"].apply(
-        lambda x: 1 if x > 0 else 0
-    )
-    datasets[i]["hasFireplace"] = datasets[i]["Fireplaces"].apply(
-        lambda x: 1 if x > 0 else 0
-    )
+    datasets[i]["hasPool"] = datasets[i]["PoolArea"].apply(lambda x: 1 if x > 0 else 0)
+    datasets[i]["has2ndfloor"] = datasets[i]["2ndFlrSF"].apply(lambda x: 1 if x > 0 else 0)
+    datasets[i]["hasGarage"] = datasets[i]["GarageArea"].apply(lambda x: 1 if x > 0 else 0)
+    datasets[i]["hasBsmt"] = datasets[i]["TotalBsmtSF"].apply(lambda x: 1 if x > 0 else 0)
+    datasets[i]["hasFireplace"] = datasets[i]["Fireplaces"].apply(lambda x: 1 if x > 0 else 0)
 
 # df_train[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF"]].head(20)
 
 
-# In[ ]:
+# In[61]:
 
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
@@ -257,7 +262,7 @@ print("df_train")
 display(df_train.head(3))
 
 
-# In[10]:
+# In[62]:
 
 
 # # ラベルエンコーディング後に改めて相関係数行列を表示してみる
@@ -272,7 +277,7 @@ display(df_train.head(3))
 # plt.show()
 
 
-# In[ ]:
+# In[67]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -315,7 +320,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[ ]:
+# In[64]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -336,7 +341,7 @@ plt.xticks(rotation=90)
 plt.show()
 
 
-# In[ ]:
+# In[65]:
 
 
 # 一度このまま提出用のデータを出力
@@ -345,10 +350,4 @@ model.fit(X, y)
 sub_pred = model.predict(df_test)
 submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
 submission.to_csv(r"train_test_submission\submission.csv", index=False)
-
-
-# In[ ]:
-
-
-
 
