@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[2]:
+# In[49]:
 
 
 import os
@@ -27,6 +27,8 @@ df_test = pd.read_csv("train_test_submission/test.csv")
 df_test_Id = df_test["Id"]
 df_test = df_test.drop("Id", axis=1)
 
+df_all_data = pd.concat([df_train, df_test])
+
 print(f"df_train.shape: {df_train.shape}")
 display(df_train.head(5))
 print(f"df_train.shape: {df_test.shape}")
@@ -38,26 +40,27 @@ print("\n", "-" * 10, "df_test.info()", "-" * 10)
 print(df_test.info())
 
 
+
 # # ydata_profilingを使う場合。時間かかるので注意
 
 # if not os.path.exists("ydata_profiling"):
 #     os.makedirs("ydata_profiling")
 
-# profile = ProfileReport(df_train, minimal=True)
+# profile = ProfileReport(df_all_data, minimal=True)
 # profile.to_file("ydata_profiling/kaggle_houseprices_minimal.html")
 
-# # profile = ProfileReport(df_train, minimal=False)
+# # profile = ProfileReport(df_all_data, minimal=False)
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[3]:
+# In[41]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[4]:
+# In[42]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -69,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[5]:
+# In[43]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -85,40 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[6]:
-
-
-# threshold = 0.6
-# high_corr_cols = (
-#     corr_matrix["SalePrice"][abs(corr_matrix["SalePrice"]) >= threshold]
-#     .sort_values(ascending=False)
-#     .index
-# ).drop("SalePrice")
-
-# # プロットのサイズを指定 (行数と列数は自由に調整可能)
-# num_cols = len(high_corr_cols)
-# fig, axes = plt.subplots(
-#     nrows=(num_cols // 3 + 1), ncols=3, figsize=(15, 5 * (num_cols // 3 + 1))
-# )
-
-# # high_corr_colsにある特徴量ごとに散布図を描く
-# for ax, col in zip(axes.flatten(), high_corr_cols):
-#     sns.scatterplot(x=df_train[col], y=df_train["SalePrice"], alpha=0.3, ax=ax)
-#     ax.set_title(f"{col} vs SalePrice. 相関係数: {corr_matrix["SalePrice"][col]:.3f}")
-
-# # グラフのレイアウトを自動調整
-# plt.suptitle(
-#     f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図\n"
-# )
-# plt.tight_layout()
-# plt.show()
-
-# # 外れ値が同じデータを指しているのかどうかをパパッと確認したいが…このままだと出来ない
-# # plotlyとかいうインタラクティブにグラフを描けるライブラリを使うと良いかも？
-# # とりあえず、もう一度スターター？見るか
-
-
-# In[14]:
+# In[44]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -126,7 +96,7 @@ plt.show()
 import plotly.express as px
 import plotly.subplots as sp
 
-threshold = 0.5
+threshold = 0.6
 high_corr_cols = (
     corr_matrix["SalePrice"][abs(corr_matrix["SalePrice"]) >= threshold]
     .sort_values(ascending=False)
@@ -160,8 +130,8 @@ for i, col in enumerate(high_corr_cols):
 fig.update_layout(
     title_text=f"SalePriceとの相関係数の絶対値が{threshold}以上の特徴量についての散布図",
     showlegend=False,
-    height=500 * rows,
-    width=1500,
+    height=400 * rows,
+    width=1200,
 )
 
 # グラフの表示
@@ -172,10 +142,10 @@ fig.show()
 
 # # 2. 前処理
 
-# In[12]:
+# In[45]:
 
 
-# 外れ値処理
+# 外れ値処理(訓練データ)
 df_train_befdrop = df_train
 df_train = df_train.drop(df_train.index[[523, 1298]])
 
@@ -192,10 +162,40 @@ fig.update_layout(
 fig.show()
 
 
-# In[60]:
+# In[46]:
 
 
-# 特徴量エンジニアリング
+# 欠損値処理(訓練データ、テストデータ)
+df_all_data = pd.concat([df_train, df_test])
+
+df_missing_values_count = df_all_data.isna().sum()
+df_missing_values_table = pd.DataFrame(
+    {
+        "Missing_count": df_missing_values_count,
+        "Percent (%)": round(df_missing_values_count / len(df_all_data) * 100, 2)
+    }
+).sort_values("Missing_count", ascending=False)
+
+# chatGPTに作ってもらった各特徴量の説明をまとめたcsvを読み込む
+df_data_description = pd.read_csv(
+    "data_description/data_descripsion_simple_jp.csv", index_col=0
+)
+# 各特徴量の欠損値に関する表と、各特徴量の説明に関する表を結合
+df_missing_value_description = pd.concat([df_missing_values_table, df_data_description], axis=1)
+# csvに出力。これとydata_profilingのレポートを眺めながら各欠損値をどう処理するか考える。
+if not os.path.exists("missing_value"):
+    os.makedirs("missing_value")
+df_missing_value_description.to_csv(
+    "missing_value/missing_value_processing.csv", encoding="utf-8_sig"
+)
+
+display(df_missing_value_description.head(40))
+
+
+# In[37]:
+
+
+# 特徴量エンジニアリング(訓練データ、テストデータ)
 # 新しい特徴量の作成
 # 'YrBltAndRemod': 'YearBuilt' + 'YearRemodAdd'
 
@@ -233,8 +233,10 @@ for i in range(len(datasets)):
 # df_train[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF"]].head(20)
 
 
-# In[61]:
+# In[38]:
 
+
+# カテゴリ変数のエンコーディング
 
 # lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
 # https://qiita.com/Hyperion13fleet/items/afa49a84bd5db65ffc31　こっちのほうが便利？
