@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[49]:
+# In[30]:
 
 
 import os
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[41]:
+# In[31]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[42]:
+# In[32]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -72,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[43]:
+# In[33]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[44]:
+# In[34]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -142,27 +142,32 @@ fig.show()
 
 # # 2. 前処理
 
-# In[45]:
+# In[35]:
 
 
 # 外れ値処理(訓練データ)
+# 外れ値のインデックス番号は、plotlyで描いたグラフから得た
 df_train_befdrop = df_train
 df_train = df_train.drop(df_train.index[[523, 1298]])
 
-fig = px.scatter(df_train, x="GrLivArea", y="SalePrice", opacity=0.3, hover_data=[df_train.index])
+fig = px.scatter(
+    df_train, x="GrLivArea", y="SalePrice",
+    opacity=0.3,
+    hover_data=[df_train.index]
+)
 
 fig.update_layout(
-    title_text='x="GrLivArea", y="SalePrice"',
+    title_text="SalePrice vs GrLivArea. 外れ値処理後",
     showlegend=False,
-    height=600,
-    width=700,
+    height=500,
+    width=600
 )
 
 # グラフの表示
 fig.show()
 
 
-# In[46]:
+# In[36]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -176,12 +181,10 @@ df_missing_values_table = pd.DataFrame(
     }
 ).sort_values("Missing_count", ascending=False)
 
-# chatGPTに作ってもらった各特徴量の説明をまとめたcsvを読み込む
-df_data_description = pd.read_csv(
-    "data_description/data_descripsion_simple_jp.csv", index_col=0
-)
-# 各特徴量の欠損値に関する表と、各特徴量の説明に関する表を結合
+# chatGPTに作ってもらった各特徴量の説明をまとめたcsvを読み込み、欠損値に関する表と結合
+df_data_description = pd.read_csv("data_description/data_descripsion_simple_jp.csv", index_col=0)
 df_missing_value_description = pd.concat([df_missing_values_table, df_data_description], axis=1)
+
 # csvに出力。これとydata_profilingのレポートを眺めながら各欠損値をどう処理するか考える。
 if not os.path.exists("missing_value"):
     os.makedirs("missing_value")
@@ -189,10 +192,35 @@ df_missing_value_description.to_csv(
     "missing_value/missing_value_processing.csv", encoding="utf-8_sig"
 )
 
-display(df_missing_value_description.head(40))
+display(df_missing_value_description.head(10))
 
 
 # In[37]:
+
+
+# LotFrontageの欠損値をどう処理するかが難しい。一度、ここが欠損値になっているデータだけ取り出してみる
+
+df_naLot = df_all_data[df_all_data["LotFrontage"].isna()]
+
+# ydata_profilingを使ってレポート作成
+
+if not os.path.exists("ydata_profiling"):
+    os.makedirs("ydata_profiling")
+
+profile = ProfileReport(df_all_data, minimal=True)
+profile.to_file("ydata_profiling/kaggle_houseprices_naLot_minimal.html")
+
+
+# In[29]:
+
+
+# 0で補完
+# 最頻値で補完
+# 列削除(欠損値のため)：PoolQC
+# 列削除(欠損値以外の理由)：Utiliries, PoolArea
+
+
+# In[8]:
 
 
 # 特徴量エンジニアリング(訓練データ、テストデータ)
@@ -233,7 +261,7 @@ for i in range(len(datasets)):
 # df_train[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF"]].head(20)
 
 
-# In[38]:
+# In[9]:
 
 
 # カテゴリ変数のエンコーディング
@@ -262,6 +290,12 @@ print("df_train_pre_encoding")
 display(df_train_pre_encoding.head(3))
 print("df_train")
 display(df_train.head(3))
+
+
+# In[ ]:
+
+
+# df_all_data["Functional"].head(50)
 
 
 # In[62]:
