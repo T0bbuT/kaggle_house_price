@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[30]:
+# In[31]:
 
 
 import os
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[31]:
+# In[32]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[32]:
+# In[33]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -72,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[33]:
+# In[34]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[34]:
+# In[35]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -142,7 +142,7 @@ fig.show()
 
 # # 2. 前処理
 
-# In[35]:
+# In[36]:
 
 
 # 外れ値処理(訓練データ)
@@ -167,7 +167,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[36]:
+# In[37]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -192,76 +192,196 @@ df_missing_value_description.to_csv(
     "missing_value/missing_value_processing.csv", encoding="utf-8_sig"
 )
 
-display(df_missing_value_description.head(10))
+display(df_missing_value_description.head(15))
 
 
-# In[37]:
+# In[38]:
 
 
-# LotFrontageの欠損値をどう処理するかが難しい。一度、ここが欠損値になっているデータだけ取り出してみる
+# LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
 
-df_naLot = df_all_data[df_all_data["LotFrontage"].isna()]
+# object型のデータが入っている列を抽出
+object_columns = df_train.select_dtypes(include="object").columns
 
-# ydata_profilingを使ってレポート作成
+# プロットのサイズを指定
+num_cols = len(object_columns)
+rows = num_cols // 6 + 1  # 行数
+cols = 6  # 列数
 
-if not os.path.exists("ydata_profiling"):
-    os.makedirs("ydata_profiling")
+# サブプロットの作成
+fig = sp.make_subplots(
+    rows=rows, 
+    cols=cols, 
+    subplot_titles=[f"{col} vs LotFrontage" for col in object_columns],
+    )
 
-profile = ProfileReport(df_all_data, minimal=True)
-profile.to_file("ydata_profiling/kaggle_houseprices_naLot_minimal.html")
+# object_columnsにある特徴量ごとに箱ひげ図を描く
+for i, col in enumerate(object_columns):
+    row = i // cols + 1
+    col_num = i % cols + 1
+    box = px.box(df_all_data, x=col, y="LotFrontage")
+    for trace in box.data:
+        fig.add_trace(trace, row=row, col=col_num)
+    fig.update_annotations()
+
+# グラフのタイトルを設定
+fig.update_layout(
+    title_text=f"各カテゴリ変数に対するLotFrontageの箱ひげ図",
+    showlegend=False,
+    height=400 * rows,
+    width=1600,
+)
+
+# グラフの表示
+fig.show()
 
 
-# In[29]:
+# In[39]:
 
 
+# x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
+
+fig = px.box(df_all_data, x="Neighborhood", y="LotFrontage")
+
+fig.update_layout(
+    # title_text=" ",
+    showlegend=False,
+    height=500,
+    width=1000
+)
+
+# グラフの表示
+fig.show()
+
+
+# In[40]:
+
+
+# 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
+
+df_medLot_groupby_Neighborhood = df_all_data.groupby(by="Neighborhood")["LotFrontage"].agg("median")
+
+def fillnaLot(row):
+    """
+    ある1つの住宅データについて、"LotFrontage"列の値が欠損している場合はそのデータの地域（"Neighborhood"）の"LotFrontage"の中央値を返す。
+    欠損していない場合、元の値をそのまま返す。
+
+    Args:
+        row (pd.Series): "LotFrontage"列の欠損値処理をしたいデータ
+
+    Return
+    -------
+        "LotFrontage"列が…
+            欠損の場合：df_group_LotFrontage[row["Neighborhood"]]
+            欠損でない場合：row["LotFrontage"]
+    """
+    if pd.isna(row["LotFrontage"]):
+        return df_medLot_groupby_Neighborhood[row["Neighborhood"]]
+    else:
+        return row["LotFrontage"]
+
+
+# In[41]:
+
+
+# LotFrontageの補完
+df_all_data["LotFrontage"] = df_all_data.apply(fillnaLot, axis=1)
+
+# "None"で補完
+cols_fillNone = [
+    "MiscFeature",
+    "Alley",
+    "Fence",
+    "MasVnrType",
+    "FireplaceQu",
+    "GarageFinish",
+    "GarageQual",
+    "GarageCond",
+    "GarageType",
+    "BsmtCond",
+    "BsmtExposure",
+    "BsmtQual",
+    "BsmtFinType2",
+    "BsmtFinType1"    
+]
 # 0で補完
+cols_fill0 = [
+    "GarageYrBlt",
+    "MasVnrArea",
+    "BsmtHalfBath",
+    "BsmtFullBath",
+    "GarageArea",
+    "GarageCars",
+    "BsmtFinSF1",
+    "BsmtFinSF2",
+    "BsmtUnfSF",
+    "TotalBsmtSF"
+]
 # 最頻値で補完
-# 列削除(欠損値のため)：PoolQC
-# 列削除(欠損値以外の理由)：Utiliries, PoolArea
+cols_fillmode = [
+    "MSZoning",
+    "Functional",
+    "Exterior2nd",
+    "Exterior1st",
+    "SaleType",
+    "KitchenQual",
+    "Electrical"
+]
+# 列削除：PoolQC(99.7%が欠損)、Utilities(99.6%が"allpub")、PoolArea(99.6%が0)
+cols_drop = [
+    "PoolQC",
+    "Utilities",
+    "PoolArea"
+]
+
+for col in cols_fillNone:
+    df_all_data[col] = df_all_data[col].fillna("None")
+for col in cols_fill0:
+    df_all_data[col] = df_all_data[col].fillna(0)
+for col in cols_fillmode:
+    df_all_data[col] = df_all_data[col].fillna(df_all_data[col].mode()[0])
+df_all_data = df_all_data.drop(columns=cols_drop)
 
 
-# In[8]:
+# In[42]:
 
 
 # 特徴量エンジニアリング(訓練データ、テストデータ)
 # 新しい特徴量の作成
 # 'YrBltAndRemod': 'YearBuilt' + 'YearRemodAdd'
 
-datasets = [df_train, df_test]
-for i in range(len(datasets)):
-    datasets[i]["TotalSF"] = (
-        datasets[i]["TotalBsmtSF"]
-        + datasets[i]["1stFlrSF"] 
-        + datasets[i]["2ndFlrSF"]
-    )
-    datasets[i]["TotalFinSF"] = (
-        datasets[i]["BsmtFinSF1"]
-        + datasets[i]["BsmtFinSF2"]
-        + datasets[i]["1stFlrSF"]
-        + datasets[i]["2ndFlrSF"]
-    )
-    datasets[i]["TotalBathrooms"] = (
-        datasets[i]["BsmtFullBath"]
-        + 0.5 * datasets[i]["BsmtHalfBath"]
-        + datasets[i]["FullBath"]
-        + 0.5 * datasets[i]["HalfBath"]
-    )
-    datasets[i]["TotalPorchSF"] = (
-        datasets[i]["3SsnPorch"]
-        + datasets[i]["EnclosedPorch"]
-        + datasets[i]["OpenPorchSF"]
-        + datasets[i]["ScreenPorch"]
-    )
-    datasets[i]["hasPool"] = datasets[i]["PoolArea"].apply(lambda x: 1 if x > 0 else 0)
-    datasets[i]["has2ndfloor"] = datasets[i]["2ndFlrSF"].apply(lambda x: 1 if x > 0 else 0)
-    datasets[i]["hasGarage"] = datasets[i]["GarageArea"].apply(lambda x: 1 if x > 0 else 0)
-    datasets[i]["hasBsmt"] = datasets[i]["TotalBsmtSF"].apply(lambda x: 1 if x > 0 else 0)
-    datasets[i]["hasFireplace"] = datasets[i]["Fireplaces"].apply(lambda x: 1 if x > 0 else 0)
+df_all_data["TotalSF"] = (
+    df_all_data["TotalBsmtSF"]
+    + df_all_data["1stFlrSF"] 
+    + df_all_data["2ndFlrSF"]
+)
+df_all_data["TotalFinSF"] = (
+    df_all_data["BsmtFinSF1"]
+    + df_all_data["BsmtFinSF2"]
+    + df_all_data["1stFlrSF"]
+    + df_all_data["2ndFlrSF"]
+)
+df_all_data["TotalBathrooms"] = (
+    df_all_data["BsmtFullBath"]
+    + 0.5 * df_all_data["BsmtHalfBath"]
+    + df_all_data["FullBath"]
+    + 0.5 * df_all_data["HalfBath"]
+)
+df_all_data["TotalPorchSF"] = (
+    df_all_data["3SsnPorch"]
+    + df_all_data["EnclosedPorch"]
+    + df_all_data["OpenPorchSF"]
+    + df_all_data["ScreenPorch"]
+)
+df_all_data["has2ndfloor"] = df_all_data["2ndFlrSF"].apply(lambda x: 1 if x > 0 else 0)
+df_all_data["hasGarage"] = df_all_data["GarageArea"].apply(lambda x: 1 if x > 0 else 0)
+df_all_data["hasBsmt"] = df_all_data["TotalBsmtSF"].apply(lambda x: 1 if x > 0 else 0)
+df_all_data["hasFireplace"] = df_all_data["Fireplaces"].apply(lambda x: 1 if x > 0 else 0)
 
-# df_train[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF"]].head(20)
+df_all_data[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF", "has2ndfloor", "hasGarage", "hasBsmt", "hasFireplace"]].head(5)
 
 
-# In[9]:
+# In[43]:
 
 
 # カテゴリ変数のエンコーディング
@@ -292,28 +412,7 @@ print("df_train")
 display(df_train.head(3))
 
 
-# In[ ]:
-
-
-# df_all_data["Functional"].head(50)
-
-
-# In[62]:
-
-
-# # ラベルエンコーディング後に改めて相関係数行列を表示してみる
-# corr_matrix = df_train.corr(numeric_only=True)
-
-# plt.figure(figsize=(24, 20))
-# sns.heatmap(abs(corr_matrix), annot=True, fmt=".1f", annot_kws={"fontsize": 6})
-
-# カテゴリ変数を含めて相関をみたいのなら、カテゴリ変数の順位関係を考慮したラベル付けをしておかねばなるまい
-# しかし現状はそうはなっていない…
-# plt.suptitle("訓練データの相関係数(絶対値)行列_ラベルエンコーディング後")
-# plt.show()
-
-
-# In[67]:
+# In[45]:
 
 
 X = df_train.drop(["SalePrice"], axis=1)
@@ -356,7 +455,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[64]:
+# In[46]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -377,7 +476,7 @@ plt.xticks(rotation=90)
 plt.show()
 
 
-# In[65]:
+# In[47]:
 
 
 # 一度このまま提出用のデータを出力
@@ -385,5 +484,5 @@ model = LGBMRegressor(max_depth=-1)
 model.fit(X, y)
 sub_pred = model.predict(df_test)
 submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
-submission.to_csv(r"train_test_submission\submission.csv", index=False)
+submission.to_csv("train_test_submission/submission.csv", index=False)
 
