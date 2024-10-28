@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[31]:
+# In[34]:
 
 
 import os
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[32]:
+# In[35]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[33]:
+# In[36]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -72,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[34]:
+# In[37]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[35]:
+# In[38]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -142,7 +142,7 @@ fig.show()
 
 # # 2. 前処理
 
-# In[36]:
+# In[39]:
 
 
 # 外れ値処理(訓練データ)
@@ -167,7 +167,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[37]:
+# In[40]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -195,13 +195,13 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[38]:
+# In[41]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
 
 # object型のデータが入っている列を抽出
-object_columns = df_train.select_dtypes(include="object").columns
+object_columns = df_all_data.select_dtypes(include="object").columns
 
 # プロットのサイズを指定
 num_cols = len(object_columns)
@@ -236,7 +236,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[39]:
+# In[42]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -254,7 +254,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[40]:
+# In[43]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -281,7 +281,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[41]:
+# In[44]:
 
 
 # LotFrontageの補完
@@ -343,7 +343,7 @@ for col in cols_fillmode:
 df_all_data = df_all_data.drop(columns=cols_drop)
 
 
-# In[42]:
+# In[45]:
 
 
 # 特徴量エンジニアリング(訓練データ、テストデータ)
@@ -381,7 +381,7 @@ df_all_data["hasFireplace"] = df_all_data["Fireplaces"].apply(lambda x: 1 if x >
 df_all_data[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF", "has2ndfloor", "hasGarage", "hasBsmt", "hasFireplace"]].head(5)
 
 
-# In[43]:
+# In[46]:
 
 
 # カテゴリ変数のエンコーディング
@@ -397,24 +397,34 @@ from sklearn.metrics import root_mean_squared_error as rmse
 from sklearn.metrics import mean_absolute_percentage_error as mape
 
 # object型のデータが入っている列を抽出
-object_columns = df_train.select_dtypes(include="object").columns
-df_train_pre_encoding = df_train.copy()
-df_test_pre_encoding = df_test.copy()
+object_columns = df_all_data.select_dtypes(include="object").columns
+# エンコード前に退避
+df_all_data_pre_encoding = df_all_data.copy()
 
 # ラベルエンコーディング
 oe = OrdinalEncoder()
-df_train[object_columns] = oe.fit_transform(df_train[object_columns])
-df_test[object_columns] = oe.fit_transform(df_test[object_columns])
+df_all_data[object_columns] = oe.fit_transform(df_all_data[object_columns])
 
-print("df_train_pre_encoding")
-display(df_train_pre_encoding.head(3))
-print("df_train")
-display(df_train.head(3))
-
-
-# In[45]:
+print("df_all_data_pre_encoding")
+display(df_all_data_pre_encoding.head(3))
+print("df_all_data")
+display(df_all_data.head(3))
 
 
+# In[47]:
+
+
+# df_all_dataをdf_trainとdf_testに分割し直す
+ntrain = len(df_train)
+
+df_train = df_all_data[:ntrain]
+df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
+
+
+# In[48]:
+
+
+# モデル構築
 X = df_train.drop(["SalePrice"], axis=1)
 y = df_train["SalePrice"]
 
@@ -455,7 +465,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[46]:
+# In[49]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -476,7 +486,7 @@ plt.xticks(rotation=90)
 plt.show()
 
 
-# In[47]:
+# In[50]:
 
 
 # 一度このまま提出用のデータを出力
