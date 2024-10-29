@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[34]:
+# In[50]:
 
 
 import os
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[35]:
+# In[51]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[36]:
+# In[52]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -72,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[37]:
+# In[53]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[38]:
+# In[54]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -142,7 +142,7 @@ fig.show()
 
 # # 2. 前処理
 
-# In[39]:
+# In[55]:
 
 
 # 外れ値処理(訓練データ)
@@ -167,7 +167,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[40]:
+# In[56]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -195,7 +195,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[41]:
+# In[57]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -236,7 +236,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[42]:
+# In[58]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -254,7 +254,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[43]:
+# In[59]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -272,8 +272,8 @@ def fillnaLot(row):
     Return
     -------
         "LotFrontage"列が…
-            欠損の場合：df_group_LotFrontage[row["Neighborhood"]]
-            欠損でない場合：row["LotFrontage"]
+            欠損の場合: df_group_LotFrontage[row["Neighborhood"]]
+            欠損でない場合: row["LotFrontage"]
     """
     if pd.isna(row["LotFrontage"]):
         return df_medLot_groupby_Neighborhood[row["Neighborhood"]]
@@ -281,7 +281,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[44]:
+# In[60]:
 
 
 # LotFrontageの補完
@@ -343,7 +343,7 @@ for col in cols_fillmode:
 df_all_data = df_all_data.drop(columns=cols_drop)
 
 
-# In[45]:
+# In[61]:
 
 
 # 特徴量エンジニアリング(訓練データ、テストデータ)
@@ -373,15 +373,25 @@ df_all_data["TotalPorchSF"] = (
     + df_all_data["OpenPorchSF"]
     + df_all_data["ScreenPorch"]
 )
+
 df_all_data["has2ndfloor"] = df_all_data["2ndFlrSF"].apply(lambda x: 1 if x > 0 else 0)
 df_all_data["hasGarage"] = df_all_data["GarageArea"].apply(lambda x: 1 if x > 0 else 0)
 df_all_data["hasBsmt"] = df_all_data["TotalBsmtSF"].apply(lambda x: 1 if x > 0 else 0)
 df_all_data["hasFireplace"] = df_all_data["Fireplaces"].apply(lambda x: 1 if x > 0 else 0)
 
-df_all_data[["TotalSF", "TotalFinSF", "TotalBathrooms", "TotalPorchSF", "has2ndfloor", "hasGarage", "hasBsmt", "hasFireplace"]].head(5)
+df_all_data[[
+    "TotalSF",
+    "TotalFinSF",
+    "TotalBathrooms",
+    "TotalPorchSF",
+    "has2ndfloor",
+    "hasGarage",
+    "hasBsmt",
+    "hasFireplace"    
+]].head(5)
 
 
-# In[46]:
+# In[62]:
 
 
 # カテゴリ変数のエンコーディング
@@ -401,30 +411,27 @@ object_columns = df_all_data.select_dtypes(include="object").columns
 # エンコード前に退避
 df_all_data_pre_encoding = df_all_data.copy()
 
-# ラベルエンコーディング
-oe = OrdinalEncoder()
-df_all_data[object_columns] = oe.fit_transform(df_all_data[object_columns])
+# one-hot encoding
+df_all_data = pd.get_dummies(df_all_data).reset_index(drop=True)
 
-print("df_all_data_pre_encoding")
+print(f"df_all_data_pre_encoding.shape: {df_all_data_pre_encoding.shape}")
 display(df_all_data_pre_encoding.head(3))
-print("df_all_data")
+print(f"df_all_data.shape: {df_all_data.shape}")
 display(df_all_data.head(3))
 
 
-# In[47]:
+# In[63]:
 
 
-# df_all_dataをdf_trainとdf_testに分割し直す
+# モデル構築
+
+# まず、df_all_dataをdf_trainとdf_testに分割し直す
 ntrain = len(df_train)
 
 df_train = df_all_data[:ntrain]
 df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
 
 
-# In[48]:
-
-
-# モデル構築
 X = df_train.drop(["SalePrice"], axis=1)
 y = df_train["SalePrice"]
 
@@ -465,7 +472,7 @@ print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 
 
-# In[49]:
+# In[64]:
 
 
 # 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
@@ -480,13 +487,18 @@ df_feature_importances = pd.DataFrame(
     {"feature_name": model.feature_name_, "importance": model.feature_importances_}
 ).sort_values("importance", ascending=False)
 
+# 重要度が一定以上のものだけ抽出
+threshold = 5.0
+df_feature_importances_filterd = df_feature_importances[df_feature_importances["importance"] >= threshold]
+
 plt.figure(figsize=(16, 8))
-sns.barplot(data=df_feature_importances, x="feature_name", y="importance")
+sns.barplot(data=df_feature_importances_filterd, x="feature_name", y="importance")
+plt.suptitle(f"特徴量重要度(≧{threshold}のものを抽出)")
 plt.xticks(rotation=90)
 plt.show()
 
 
-# In[50]:
+# In[65]:
 
 
 # 一度このまま提出用のデータを出力
