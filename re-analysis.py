@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[50]:
+# In[111]:
 
 
 import os
@@ -29,9 +29,9 @@ df_test = df_test.drop("Id", axis=1)
 
 df_all_data = pd.concat([df_train, df_test])
 
-print(f"df_train.shape: {df_train.shape}")
+print(f"{df_train.shape=}")
 display(df_train.head(5))
-print(f"df_train.shape: {df_test.shape}")
+print(f"{df_test.shape=}")
 display(df_test.head(5))
 
 print("-" * 10, "df_train.info()", "-" * 10)
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[51]:
+# In[112]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[52]:
+# In[113]:
 
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
@@ -72,7 +72,7 @@ plt.suptitle("目的変数SalePriceの分布")
 plt.show()
 
 
-# In[53]:
+# In[114]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +88,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[54]:
+# In[115]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -142,7 +142,7 @@ fig.show()
 
 # # 2. 前処理
 
-# In[55]:
+# In[116]:
 
 
 # 外れ値処理(訓練データ)
@@ -167,7 +167,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[56]:
+# In[117]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -195,7 +195,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[57]:
+# In[118]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -236,7 +236,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[58]:
+# In[119]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -254,7 +254,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[59]:
+# In[120]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -281,7 +281,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[60]:
+# In[121]:
 
 
 # LotFrontageの補完
@@ -343,7 +343,7 @@ for col in cols_fillmode:
 df_all_data = df_all_data.drop(columns=cols_drop)
 
 
-# In[61]:
+# In[122]:
 
 
 # 特徴量エンジニアリング(訓練データ、テストデータ)
@@ -391,7 +391,7 @@ df_all_data[[
 ]].head(5)
 
 
-# In[62]:
+# In[123]:
 
 
 # カテゴリ変数のエンコーディング
@@ -402,6 +402,7 @@ df_all_data[[
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
+from sklearn.linear_model import Ridge, Lasso
 from lightgbm import LGBMRegressor, plot_tree
 from sklearn.metrics import root_mean_squared_error as rmse
 from sklearn.metrics import mean_absolute_percentage_error as mape
@@ -414,17 +415,16 @@ df_all_data_pre_encoding = df_all_data.copy()
 # one-hot encoding
 df_all_data = pd.get_dummies(df_all_data).reset_index(drop=True)
 
-print(f"df_all_data_pre_encoding.shape: {df_all_data_pre_encoding.shape}")
+print(f"{df_all_data_pre_encoding.shape=}")
 display(df_all_data_pre_encoding.head(3))
-print(f"df_all_data.shape: {df_all_data.shape}")
+print(f"{df_all_data.shape=}")
 display(df_all_data.head(3))
 
 
-# In[63]:
+# In[124]:
 
 
 # モデル構築
-
 # まず、df_all_dataをdf_trainとdf_testに分割し直す
 ntrain = len(df_train)
 
@@ -436,49 +436,78 @@ X = df_train.drop(["SalePrice"], axis=1)
 y = df_train["SalePrice"]
 
 # クロスバリデーション
-kf = KFold(n_splits=4, shuffle=True, random_state=42)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-scores = []
-params = {}
-# params = {"max_depth": 19, "learning_rate": 0.1}
+params_lgbm = {}
+params_ridge = {}
+params_lasso = {}
+# params_lgbm = {"max_depth": 19, "learning_rate": 0.1}
 # パラメータチューニングにはoptunaというのを使うと良いらしい
 # https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
 # https://qiita.com/tetsuro731/items/76434194bab336a97172
+# GBDTのパラメータについて。https://knknkn.hatenablog.com/entry/2021/06/29/125226
 
-for fold_idx, (tr_idx, va_idx) in enumerate(kf.split(X)):
-    print(f"分割 {fold_idx + 1} / {kf.n_splits}")
+models = [
+    LGBMRegressor(**params_lgbm),
+    Ridge(**params_ridge),
+    Lasso(**params_lasso)
+]
 
-    X_tr, X_va = X.iloc[tr_idx], X.iloc[va_idx]
-    y_tr, y_va = y.iloc[tr_idx], y.iloc[va_idx]
+for model in models:
+    model_name = model.__class__.__name__
+    print("-" * 10, f"{model_name=}", "-" * 10)
+    scores = []
 
-    model = LGBMRegressor(**params)
-    # GBDTのパラメータについて。https://knknkn.hatenablog.com/entry/2021/06/29/125226
-    model.fit(X_tr, y_tr)
-    y_pred = model.predict(X_va)
+    for fold_idx, (tr_idx, va_idx) in enumerate(kf.split(X)):
+        print(f"分割 {fold_idx + 1} / {kf.n_splits}")
 
-    score = rmse(np.log1p(y_pred), np.log1p(y_va))
-    print(f"スコア(rmse(np.log1p(y_pred), np.log1p(y_va)): {score}")
-    mape_ = mape(y_pred, y_va) * 100
-    print(f"MAPE (平均絶対誤差率): {mape_:.2f}%")
-    rmspe = np.sqrt(np.mean(np.square((y_va - y_pred) / y_va))) * 100
-    print(f"RMSPE (平均平方二乗誤差率): {rmspe:.2f}%")
-    print("\n")
+        X_tr, X_va = X.iloc[tr_idx], X.iloc[va_idx]
+        y_tr, y_va = y.iloc[tr_idx], y.iloc[va_idx]
+    
+        model.fit(X_tr, y_tr)
+        y_pred = model.predict(X_va)
+        
+        # 予測値に負の値が含まれているかをチェック
+        flag_neg = np.any(y_pred < 0)
+        if flag_neg:
+            print("予測値に負の値が含まれています。スコア算出のため負の予測値は0に変換されます。")
+            y_pred  = np.maximum(y_pred, 0)    
 
-    scores.append(score)
+        score = rmse(np.log1p(y_pred), np.log1p(y_va))
+        mape_ = mape(y_pred, y_va) * 100
+        scores.append(score)
+        print(f"Score: {score}")
+        print(f"MAPE(平均絶対誤差率): {mape_:.2f}%")
 
-print(f"{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}.")
+    print(f"\n分割した計{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}\n")   
 
 # メモ：[LightGBM] [Warning] No further splits with positive gain, best gain: -infについて
 # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
+# メモ：Objective did not converge. You might want to increase the number of iterations, check the scale of the features or consider increasing regularisation.について
+# これは「回帰モデルの目的関数が収束せず、推定結果が安定していない可能性」を示唆している。最大反復回数の増加、データのスケーリング、正則化パラメータの調整を試すと良い。
 
 
-# In[64]:
+# In[125]:
 
 
-# 学習結果の図示(ここで表示しているのはクロスバリデーションの最後の分割時のモデルについて)
+# 提出用のデータを出力
+model = LGBMRegressor(max_depth=-1)
+model.fit(X, y)
+sub_pred = model.predict(df_test)
+flag_neg = np.any(sub_pred < 0)
+if flag_neg:
+    print("予測値に負の値が含まれています。スコア算出のため負の予測値は0に変換されます。")
+    sub_pred  = np.maximum(sub_pred, 0)  
+submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
+submission.to_csv("train_test_submission/submission.csv", index=False)
+
+
+# In[126]:
+
+
+# 学習結果の図示
 tree_idx = 0
 print(f"{tree_idx + 1}番目の木の様子は以下の通り")
-
 
 plot_tree(model, tree_index=tree_idx, figsize=(20, 10))
 
@@ -496,15 +525,4 @@ sns.barplot(data=df_feature_importances_filterd, x="feature_name", y="importance
 plt.suptitle(f"特徴量重要度(≧{threshold}のものを抽出)")
 plt.xticks(rotation=90)
 plt.show()
-
-
-# In[65]:
-
-
-# 一度このまま提出用のデータを出力
-model = LGBMRegressor(max_depth=-1)
-model.fit(X, y)
-sub_pred = model.predict(df_test)
-submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
-submission.to_csv("train_test_submission/submission.csv", index=False)
 
