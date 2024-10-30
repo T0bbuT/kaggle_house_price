@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[1]:
+# In[71]:
 
 
 import os
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[2]:
+# In[72]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[3]:
+# In[73]:
 
 
 SalePrice = df_train["SalePrice"]
@@ -93,21 +93,21 @@ plt.tight_layout()
 plt.show()
 
 
-# In[4]:
+# In[74]:
 
 
-numeric_columns = df_train.select_dtypes(include="number").columns
+numeric_cols = df_train.select_dtypes(include="number").columns
 
 df_skew_kurt_train = pd.DataFrame({
-    "Feature": numeric_columns,
-    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_columns],
-    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_columns]
+    "Feature": numeric_cols,
+    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_cols],
+    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_cols]
 })
 
-display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False))
+display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False).head(10))
 
 
-# In[5]:
+# In[75]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -123,7 +123,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[6]:
+# In[76]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -179,7 +179,7 @@ fig.show()
 
 # ## 外れ値処理
 
-# In[7]:
+# In[77]:
 
 
 # 外れ値処理(訓練データ)
@@ -206,7 +206,7 @@ fig.show()
 
 # ## 欠損値補完・列削除
 
-# In[8]:
+# In[78]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -234,16 +234,16 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[9]:
+# In[79]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
 
 # object型のデータが入っている列を抽出
-object_columns = df_all_data.select_dtypes(include="object").columns
+object_cols = df_all_data.select_dtypes(include="object").columns
 
 # プロットのサイズを指定
-plot_size = len(object_columns)
+plot_size = len(object_cols)
 rows = plot_size // 6 + 1  # 行数
 cols = 6  # 列数
 
@@ -251,11 +251,11 @@ cols = 6  # 列数
 fig = sp.make_subplots(
     rows=rows, 
     cols=cols, 
-    subplot_titles=[f"{col} vs LotFrontage" for col in object_columns],
+    subplot_titles=[f"{col} vs LotFrontage" for col in object_cols],
     )
 
-# object_columnsにある特徴量ごとに箱ひげ図を描く
-for i, col in enumerate(object_columns):
+# object_colsにある特徴量ごとに箱ひげ図を描く
+for i, col in enumerate(object_cols):
     row = i // cols + 1
     col_num = i % cols + 1
     box = px.box(df_all_data, x=col, y="LotFrontage")
@@ -275,7 +275,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[10]:
+# In[80]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -293,7 +293,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[11]:
+# In[81]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -320,7 +320,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[12]:
+# In[82]:
 
 
 # LotFrontageの補完
@@ -384,7 +384,7 @@ df_all_data = df_all_data.drop(columns=cols_drop)
 
 # ## 新たな特徴量の作成(訓練データ、テストデータ)
 
-# In[13]:
+# In[83]:
 
 
 # 新しい特徴量の作成
@@ -433,7 +433,7 @@ df_all_data[[
 
 # ## カテゴリ変数のエンコーディング
 
-# In[14]:
+# In[84]:
 
 
 # カテゴリ変数のエンコーディング
@@ -451,7 +451,7 @@ from sklearn.metrics import mean_absolute_percentage_error as mape
 from sklearn.preprocessing import PowerTransformer
 
 # object型のデータが入っている列を抽出
-object_columns = df_all_data.select_dtypes(include="object").columns
+object_cols = df_all_data.select_dtypes(include="object").columns
 # エンコード前に退避
 df_all_data_pre_encoding = df_all_data.copy()
 
@@ -466,7 +466,7 @@ display(df_all_data.head(3))
 
 # ## 数値変換
 
-# In[15]:
+# In[85]:
 
 
 # 実務上の運用を想定し、数値変換の方針は訓練データのみを使って得る
@@ -486,36 +486,29 @@ print(f"Skewness of SalePrice after boxcox: {stats.skew(SalePrice_aft_boxcox)}")
 print(f"Kurtosis of SalePrice after boxcox: {stats.kurtosis(SalePrice_aft_boxcox)}")
 
 
-# In[26]:
+# In[112]:
 
 
-# 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う
-numeric_columns = df_train.select_dtypes(include="number").columns
+# 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う。SalePriceについてもまとめて変換を行う予定
+numeric_cols = df_train.select_dtypes(include="number").columns
 
-df_skew_kurt_train = pd.DataFrame({
-    "Feature": numeric_columns,
-    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_columns],
-    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_columns]
-})
+skewness = df_train[numeric_cols].skew()
+high_skew_cols = skewness[skewness > 0.75].index
 
-# display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False))
-
-# ここで、skewnessが高いもののみ抽出する！
-
-# from sklearn.preprocessing import PowerTransformer を使うのが良さそう！！
 pt = PowerTransformer(method="yeo-johnson")
-pt.fit(df_train[numeric_columns])
-df_lambdas = pd.DataFrame({
-    "Feature": numeric_columns,
-    "lambda": pt.lambdas_
-})
+pt.fit(df_train[high_skew_cols])
 
-display(df_lambdas)
+# df_lambdas = pd.DataFrame({
+#     "col": high_skew_cols,
+#     "lambda": pt.lambdas_
+# })
+# print("尖度が大きい特徴量(及び目的変数)と、yeo-johnson時のlambdaの値")
+# display(df_lambdas)
 
 
 # # 3. モデル構築
 
-# In[36]:
+# In[87]:
 
 
 # モデル構築
@@ -577,7 +570,7 @@ for model in models:
 
 # # 4. 提出
 
-# In[15]:
+# In[88]:
 
 
 # 提出用のデータを出力
@@ -592,7 +585,7 @@ submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
 submission.to_csv("train_test_submission/submission.csv", index=False)
 
 
-# In[16]:
+# In[89]:
 
 
 # 学習結果の図示
