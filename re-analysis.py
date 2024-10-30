@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[111]:
+# In[1]:
 
 
 import os
@@ -53,26 +53,61 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[112]:
+# In[2]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[113]:
+# In[3]:
 
+
+SalePrice = df_train["SalePrice"]
+
+skewness_SalePrice = SalePrice.skew()
+kurtosis_SalePrice = SalePrice.kurtosis()
 
 print("-" * 10, 'df_train["SalePrice"].describe()', "-" * 10)
 print(df_train["SalePrice"].describe())
 
-# SalePriceの分布
-sns.histplot(df_train["SalePrice"], kde=True)
-plt.suptitle("目的変数SalePriceの分布")
+print(f"{skewness_SalePrice=}")
+print(f"{kurtosis_SalePrice=}")
+
+# plotlyではkdeを描写するのが面倒っぽいのでseabornで描写
+fig, ax = plt.subplots(1, 2,figsize=(10, 4))
+
+sns.histplot(SalePrice, stat="density", kde=True, ax=ax[0])
+ax[0].set_title("ヒストグラムと正規分布(黒線)")
+ax[0].tick_params(axis="x", labelsize=8, rotation=20)
+
+xmin, xmax = ax[0].get_xlim()
+x = np.linspace(xmin, xmax, 100)
+y_norm = stats.norm.pdf(x, np.mean(SalePrice), np.std(SalePrice))
+ax[0].plot(x, y_norm, "k", linewidth=1)
+
+stats.probplot(SalePrice, plot=ax[1])
+ax[1].set_title("正規確率プロット")
+
+plt.tight_layout()
 plt.show()
 
 
-# In[114]:
+# In[4]:
+
+
+numeric_columns = df_train.select_dtypes(include="number").columns
+
+df_skew_kurt_train = pd.DataFrame({
+    "Feature": numeric_columns,
+    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_columns],
+    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_columns]
+})
+
+display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False))
+
+
+# In[5]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -88,7 +123,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[115]:
+# In[6]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -104,8 +139,8 @@ high_corr_cols = (
 ).drop("SalePrice")
 
 # プロットのサイズを指定
-num_cols = len(high_corr_cols)
-rows = num_cols // 3 + 1  # 行数
+plot_size = len(high_corr_cols)
+rows = plot_size // 3 + 1  # 行数
 cols = 3  # 列数
 
 # サブプロットの作成
@@ -142,7 +177,9 @@ fig.show()
 
 # # 2. 前処理
 
-# In[116]:
+# ## 外れ値処理
+
+# In[7]:
 
 
 # 外れ値処理(訓練データ)
@@ -167,7 +204,9 @@ fig.update_layout(
 fig.show()
 
 
-# In[117]:
+# ## 欠損値補完・列削除
+
+# In[8]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -195,7 +234,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[118]:
+# In[9]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -204,8 +243,8 @@ display(df_missing_value_description.head(15))
 object_columns = df_all_data.select_dtypes(include="object").columns
 
 # プロットのサイズを指定
-num_cols = len(object_columns)
-rows = num_cols // 6 + 1  # 行数
+plot_size = len(object_columns)
+rows = plot_size // 6 + 1  # 行数
 cols = 6  # 列数
 
 # サブプロットの作成
@@ -236,7 +275,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[119]:
+# In[10]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -254,7 +293,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[120]:
+# In[11]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -281,7 +320,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[121]:
+# In[12]:
 
 
 # LotFrontageの補完
@@ -343,10 +382,11 @@ for col in cols_fillmode:
 df_all_data = df_all_data.drop(columns=cols_drop)
 
 
-# In[122]:
+# ## 新たな特徴量の作成(訓練データ、テストデータ)
+
+# In[13]:
 
 
-# 特徴量エンジニアリング(訓練データ、テストデータ)
 # 新しい特徴量の作成
 # 'YrBltAndRemod': 'YearBuilt' + 'YearRemodAdd'
 
@@ -374,10 +414,10 @@ df_all_data["TotalPorchSF"] = (
     + df_all_data["ScreenPorch"]
 )
 
-df_all_data["has2ndfloor"] = df_all_data["2ndFlrSF"].apply(lambda x: 1 if x > 0 else 0)
-df_all_data["hasGarage"] = df_all_data["GarageArea"].apply(lambda x: 1 if x > 0 else 0)
-df_all_data["hasBsmt"] = df_all_data["TotalBsmtSF"].apply(lambda x: 1 if x > 0 else 0)
-df_all_data["hasFireplace"] = df_all_data["Fireplaces"].apply(lambda x: 1 if x > 0 else 0)
+df_all_data["has2ndfloor"] = df_all_data["2ndFlrSF"] > 0
+df_all_data["hasGarage"] = df_all_data["GarageArea"] > 0
+df_all_data["hasBsmt"] = df_all_data["TotalBsmtSF"] > 0
+df_all_data["hasFireplace"] = df_all_data["Fireplaces"] > 0
 
 df_all_data[[
     "TotalSF",
@@ -391,7 +431,9 @@ df_all_data[[
 ]].head(5)
 
 
-# In[123]:
+# ## カテゴリ変数のエンコーディング
+
+# In[14]:
 
 
 # カテゴリ変数のエンコーディング
@@ -406,6 +448,7 @@ from sklearn.linear_model import Ridge, Lasso
 from lightgbm import LGBMRegressor, plot_tree
 from sklearn.metrics import root_mean_squared_error as rmse
 from sklearn.metrics import mean_absolute_percentage_error as mape
+from sklearn.preprocessing import PowerTransformer
 
 # object型のデータが入っている列を抽出
 object_columns = df_all_data.select_dtypes(include="object").columns
@@ -421,16 +464,61 @@ print(f"{df_all_data.shape=}")
 display(df_all_data.head(3))
 
 
-# In[124]:
+# ## 数値変換
+
+# In[15]:
 
 
-# モデル構築
+# 実務上の運用を想定し、数値変換の方針は訓練データのみを使って得る
+
 # まず、df_all_dataをdf_trainとdf_testに分割し直す
 ntrain = len(df_train)
 
 df_train = df_all_data[:ntrain]
 df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
 
+SalePrice = df_train["SalePrice"]
+
+# 目的変数について
+SalePrice_aft_boxcox, lambda_SalePrice = stats.boxcox(SalePrice)
+print(f"{lambda_SalePrice=}")
+print(f"Skewness of SalePrice after boxcox: {stats.skew(SalePrice_aft_boxcox)}")
+print(f"Kurtosis of SalePrice after boxcox: {stats.kurtosis(SalePrice_aft_boxcox)}")
+
+
+# In[26]:
+
+
+# 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う
+numeric_columns = df_train.select_dtypes(include="number").columns
+
+df_skew_kurt_train = pd.DataFrame({
+    "Feature": numeric_columns,
+    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_columns],
+    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_columns]
+})
+
+# display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False))
+
+# ここで、skewnessが高いもののみ抽出する！
+
+# from sklearn.preprocessing import PowerTransformer を使うのが良さそう！！
+pt = PowerTransformer(method="yeo-johnson")
+pt.fit(df_train[numeric_columns])
+df_lambdas = pd.DataFrame({
+    "Feature": numeric_columns,
+    "lambda": pt.lambdas_
+})
+
+display(df_lambdas)
+
+
+# # 3. モデル構築
+
+# In[36]:
+
+
+# モデル構築
 
 X = df_train.drop(["SalePrice"], axis=1)
 y = df_train["SalePrice"]
@@ -468,12 +556,12 @@ for model in models:
         y_pred = model.predict(X_va)
         
         # 予測値に負の値が含まれているかをチェック
-        flag_neg = np.any(y_pred < 0)
+        flag_neg = np.any(y_pred <= 0)
         if flag_neg:
-            print("予測値に負の値が含まれています。スコア算出のため負の予測値は0に変換されます。")
-            y_pred  = np.maximum(y_pred, 0)    
+            print("予測値に0以下の値が含まれています。スコア算出のためこれらの予測値は十分小さい正の値1e-6に変換されます。")
+            y_pred  = np.maximum(y_pred, 1e-6)    
 
-        score = rmse(np.log1p(y_pred), np.log1p(y_va))
+        score = rmse(np.log(y_pred), np.log(y_va))
         mape_ = mape(y_pred, y_va) * 100
         scores.append(score)
         print(f"Score: {score}")
@@ -482,12 +570,14 @@ for model in models:
     print(f"\n分割した計{fold_idx + 1}個のモデルのスコアの平均値: {np.mean(scores)}\n")   
 
 # メモ：[LightGBM] [Warning] No further splits with positive gain, best gain: -infについて
-# これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
+    # これは「決定木の作成中、これ以上分岐を作っても予測誤差が下がらなかったのでこれ以上分岐をさせなかった」ことを意味するらしい
 # メモ：Objective did not converge. You might want to increase the number of iterations, check the scale of the features or consider increasing regularisation.について
-# これは「回帰モデルの目的関数が収束せず、推定結果が安定していない可能性」を示唆している。最大反復回数の増加、データのスケーリング、正則化パラメータの調整を試すと良い。
+    # これは「回帰モデルの目的関数が収束せず、推定結果が安定していない可能性」を示唆している。最大反復回数の増加、データのスケーリング、正則化パラメータの調整を試すと良い。
 
 
-# In[125]:
+# # 4. 提出
+
+# In[15]:
 
 
 # 提出用のデータを出力
@@ -496,13 +586,13 @@ model.fit(X, y)
 sub_pred = model.predict(df_test)
 flag_neg = np.any(sub_pred < 0)
 if flag_neg:
-    print("予測値に負の値が含まれています。スコア算出のため負の予測値は0に変換されます。")
+    print("予測値に0以下の値が含まれています。スコア算出のためこれらの予測値は十分小さい正の値1e-6に変換されます。")
     sub_pred  = np.maximum(sub_pred, 0)  
 submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
 submission.to_csv("train_test_submission/submission.csv", index=False)
 
 
-# In[126]:
+# In[16]:
 
 
 # 学習結果の図示
