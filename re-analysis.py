@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[71]:
+# In[100]:
 
 
 import os
@@ -16,8 +16,8 @@ from ydata_profiling import ProfileReport
 from scipy import stats
 from scipy import special
 
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", 100)
+pd.set_option("display.max_rows", 100)
 
 df_train = pd.read_csv("train_test_submission/train.csv")
 df_train_Id = df_train["Id"]
@@ -53,14 +53,14 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[72]:
+# In[101]:
 
 
 print("-" * 10, "df_train.columns", "-" * 10)
 print(df_train.columns)
 
 
-# In[73]:
+# In[102]:
 
 
 SalePrice = df_train["SalePrice"]
@@ -93,21 +93,22 @@ plt.tight_layout()
 plt.show()
 
 
-# In[74]:
+# In[103]:
 
 
-numeric_cols = df_train.select_dtypes(include="number").columns
+df_train_features = df_train.drop(["SalePrice"], axis=1)
+numeric_features = df_train_features.select_dtypes(include="number").columns
 
 df_skew_kurt_train = pd.DataFrame({
-    "Feature": numeric_cols,
-    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_cols],
-    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_cols]
+    "Feature": numeric_features,
+    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_features],
+    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_features]
 })
 
 display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False).head(10))
 
 
-# In[75]:
+# In[104]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -123,7 +124,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[76]:
+# In[105]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -179,7 +180,7 @@ fig.show()
 
 # ## 外れ値処理
 
-# In[77]:
+# In[106]:
 
 
 # 外れ値処理(訓練データ)
@@ -206,7 +207,7 @@ fig.show()
 
 # ## 欠損値補完・列削除
 
-# In[78]:
+# In[107]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -234,7 +235,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[79]:
+# In[108]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -275,7 +276,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[80]:
+# In[109]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -293,7 +294,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[81]:
+# In[110]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -320,7 +321,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[82]:
+# In[111]:
 
 
 # LotFrontageの補完
@@ -384,7 +385,7 @@ df_all_data = df_all_data.drop(columns=cols_drop)
 
 # ## 新たな特徴量の作成(訓練データ、テストデータ)
 
-# In[83]:
+# In[112]:
 
 
 # 新しい特徴量の作成
@@ -433,7 +434,7 @@ df_all_data[[
 
 # ## カテゴリ変数のエンコーディング
 
-# In[84]:
+# In[113]:
 
 
 # カテゴリ変数のエンコーディング
@@ -466,10 +467,8 @@ display(df_all_data.head(3))
 
 # ## 数値変換
 
-# In[85]:
+# In[114]:
 
-
-# 実務上の運用を想定し、数値変換の方針は訓練データのみを使って得る
 
 # まず、df_all_dataをdf_trainとdf_testに分割し直す
 ntrain = len(df_train)
@@ -477,29 +476,45 @@ ntrain = len(df_train)
 df_train = df_all_data[:ntrain]
 df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
 
+# 訓練データを特徴量と目的変数に分ける(本当はもっと最初の方にやっておくべきだったような…)
+df_train_features = df_train.drop(["SalePrice"], axis=1)
 SalePrice = df_train["SalePrice"]
 
-# 目的変数について
-SalePrice_aft_boxcox, lambda_SalePrice = stats.boxcox(SalePrice)
-print(f"{lambda_SalePrice=}")
-print(f"Skewness of SalePrice after boxcox: {stats.skew(SalePrice_aft_boxcox)}")
-print(f"Kurtosis of SalePrice after boxcox: {stats.kurtosis(SalePrice_aft_boxcox)}")
+# SalePriceに対してBox-Cox変換の実行
+SalePrice_boxcox, lambda_SalePrice_boxcox = stats.boxcox(SalePrice)
+
+# 変換後のSalePriceを新しいDataFrameに保存し、元のインデックスを保持
+df_SalePrice_boxcox = pd.DataFrame(SalePrice_boxcox, index=SalePrice.index, columns=["SalePrice_boxcox"])
+
+# λ (lambda) 値の表示
+print("Lambda value used for transformation:", lambda_SalePrice_boxcox)
+
+# 変換後のデータフレームを表示
+display(df_SalePrice_boxcox.head())
 
 
-# In[112]:
+# In[115]:
 
 
-# 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う。SalePriceについてもまとめて変換を行う予定
-numeric_cols = df_train.select_dtypes(include="number").columns
+# 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う
+numeric_features = df_train_features.select_dtypes(include="number").columns
 
-skewness = df_train[numeric_cols].skew()
-high_skew_cols = skewness[skewness > 0.75].index
+skewness = df_train[numeric_features].skew()
+high_skew_features = skewness[skewness > 0.75].index
 
+# yeo-johnson変換器を作成。学習
 pt = PowerTransformer(method="yeo-johnson")
-pt.fit(df_train[high_skew_cols])
+pt.fit(df_train_features[high_skew_features])
+
+# 訓練データにyeo-johnson変換を実行。boxcoxを行った
+df_train_features[high_skew_features] = pt.transform(df_train_features[high_skew_features])
+df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
+
+# テストデータにyeo-johnson変換を実行
+df_test[high_skew_features] = pt.transform(df_test[high_skew_features])
 
 # df_lambdas = pd.DataFrame({
-#     "col": high_skew_cols,
+#     "col": high_skew_features,
 #     "lambda": pt.lambdas_
 # })
 # print("尖度が大きい特徴量(及び目的変数)と、yeo-johnson時のlambdaの値")
@@ -508,20 +523,20 @@ pt.fit(df_train[high_skew_cols])
 
 # # 3. モデル構築
 
-# In[87]:
+# In[121]:
 
 
 # モデル構築
 
-X = df_train.drop(["SalePrice"], axis=1)
-y = df_train["SalePrice"]
+X = df_train.drop(["SalePrice_boxcox"], axis=1)
+y = df_train["SalePrice_boxcox"]
 
 # クロスバリデーション
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 params_lgbm = {}
-params_ridge = {}
-params_lasso = {}
+params_ridge = {"alpha": 1.0}
+params_lasso = {"alpha": 0.001}
 # params_lgbm = {"max_depth": 19, "learning_rate": 0.1}
 # パラメータチューニングにはoptunaというのを使うと良いらしい
 # https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
@@ -554,8 +569,11 @@ for model in models:
             print("予測値に0以下の値が含まれています。スコア算出のためこれらの予測値は十分小さい正の値1e-6に変換されます。")
             y_pred  = np.maximum(y_pred, 1e-6)    
 
-        score = rmse(np.log(y_pred), np.log(y_va))
-        mape_ = mape(y_pred, y_va) * 100
+        y_pred_inv_boxcox = special.inv_boxcox(y_pred, lambda_SalePrice_boxcox)
+        y_va_inv_boxcox = special.inv_boxcox(y_va, lambda_SalePrice_boxcox)
+
+        score = rmse(np.log(y_pred_inv_boxcox), np.log(y_va_inv_boxcox))
+        mape_ = mape(y_pred_inv_boxcox, y_va_inv_boxcox) * 100
         scores.append(score)
         print(f"Score: {score}")
         print(f"MAPE(平均絶対誤差率): {mape_:.2f}%")
@@ -570,42 +588,43 @@ for model in models:
 
 # # 4. 提出
 
-# In[88]:
+# In[117]:
 
 
 # 提出用のデータを出力
-model = LGBMRegressor(max_depth=-1)
+model = Lasso(**params_lasso)
 model.fit(X, y)
-sub_pred = model.predict(df_test)
+pred = model.predict(df_test)
+sub_pred = special.inv_boxcox(pred, lambda_SalePrice_boxcox)
 flag_neg = np.any(sub_pred < 0)
 if flag_neg:
     print("予測値に0以下の値が含まれています。スコア算出のためこれらの予測値は十分小さい正の値1e-6に変換されます。")
-    sub_pred  = np.maximum(sub_pred, 0)  
+    sub_pred  = np.maximum(sub_pred, 1e-6)  
 submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
 submission.to_csv("train_test_submission/submission.csv", index=False)
 
 
-# In[89]:
+# In[118]:
 
 
-# 学習結果の図示
-tree_idx = 0
-print(f"{tree_idx + 1}番目の木の様子は以下の通り")
+# # 学習結果の図示(lightGBM採用時)
+# tree_idx = 0
+# print(f"{tree_idx + 1}番目の木の様子は以下の通り")
 
-plot_tree(model, tree_index=tree_idx, figsize=(20, 10))
+# plot_tree(model, tree_index=tree_idx, figsize=(20, 10))
 
-# 特徴量重要度
-df_feature_importances = pd.DataFrame(
-    {"feature_name": model.feature_name_, "importance": model.feature_importances_}
-).sort_values("importance", ascending=False)
+# # 特徴量重要度
+# df_feature_importances = pd.DataFrame(
+#     {"feature_name": model.feature_name_, "importance": model.feature_importances_}
+# ).sort_values("importance", ascending=False)
 
-# 重要度が一定以上のものだけ抽出
-threshold = 5.0
-df_feature_importances_filterd = df_feature_importances[df_feature_importances["importance"] >= threshold]
+# # 重要度が一定以上のものだけ抽出
+# threshold = 5.0
+# df_feature_importances_filterd = df_feature_importances[df_feature_importances["importance"] >= threshold]
 
-plt.figure(figsize=(16, 8))
-sns.barplot(data=df_feature_importances_filterd, x="feature_name", y="importance")
-plt.suptitle(f"特徴量重要度(≧{threshold}のものを抽出)")
-plt.xticks(rotation=90)
-plt.show()
+# plt.figure(figsize=(16, 8))
+# sns.barplot(data=df_feature_importances_filterd, x="feature_name", y="importance")
+# plt.suptitle(f"特徴量重要度(≧{threshold}のものを抽出)")
+# plt.xticks(rotation=90)
+# plt.show()
 
