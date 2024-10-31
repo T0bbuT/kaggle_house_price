@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[100]:
+# In[227]:
 
 
 import os
@@ -53,14 +53,7 @@ print(df_test.info())
 # # profile.to_file("ydata_profiling/kaggle_houseprices.html")
 
 
-# In[101]:
-
-
-print("-" * 10, "df_train.columns", "-" * 10)
-print(df_train.columns)
-
-
-# In[102]:
+# In[228]:
 
 
 SalePrice = df_train["SalePrice"]
@@ -93,22 +86,23 @@ plt.tight_layout()
 plt.show()
 
 
-# In[103]:
+# In[229]:
 
 
-df_train_features = df_train.drop(["SalePrice"], axis=1)
-numeric_features = df_train_features.select_dtypes(include="number").columns
+df_all_data_features = df_all_data.drop(["SalePrice"], axis=1)
+numeric_features = df_all_data_features.select_dtypes(include="number").columns
 
-df_skew_kurt_train = pd.DataFrame({
+
+df_skew_kurt = pd.DataFrame({
     "Feature": numeric_features,
-    "Skewness": [stats.skew(df_train[col], nan_policy="omit") for col in numeric_features],
-    "Kurtosis": [stats.kurtosis(df_train[col], nan_policy="omit") for col in numeric_features]
+    "Skewness": [stats.skew(df_all_data_features[col], nan_policy="omit") for col in numeric_features],
+    "Kurtosis": [stats.kurtosis(df_all_data_features[col], nan_policy="omit") for col in numeric_features]
 })
 
-display(df_skew_kurt_train.sort_values(by="Skewness", ascending=False).head(10))
+display(df_skew_kurt.sort_values(by="Skewness", ascending=False).head(10))
 
 
-# In[104]:
+# In[230]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -118,13 +112,13 @@ corr_matrix = df_train.corr(numeric_only=True)
 """
 
 plt.figure(figsize=(12, 10))
-sns.heatmap(abs(corr_matrix), annot=True, fmt=".1f", annot_kws={"fontsize": 6})
+sns.heatmap(abs(corr_matrix), cmap="viridis", annot=True, fmt=".1f", annot_kws={"fontsize": 6})
 
 plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数を除く")
 plt.show()
 
 
-# In[105]:
+# In[231]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -180,7 +174,7 @@ fig.show()
 
 # ## 外れ値処理
 
-# In[106]:
+# In[232]:
 
 
 # 外れ値処理(訓練データ)
@@ -207,7 +201,7 @@ fig.show()
 
 # ## 欠損値補完・列削除
 
-# In[107]:
+# In[233]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -235,7 +229,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[108]:
+# In[234]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -276,7 +270,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[109]:
+# In[235]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -294,7 +288,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[110]:
+# In[236]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -321,7 +315,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[111]:
+# In[237]:
 
 
 # LotFrontageの補完
@@ -385,7 +379,7 @@ df_all_data = df_all_data.drop(columns=cols_drop)
 
 # ## 新たな特徴量の作成(訓練データ、テストデータ)
 
-# In[112]:
+# In[238]:
 
 
 # 新しい特徴量の作成
@@ -434,13 +428,8 @@ df_all_data[[
 
 # ## カテゴリ変数のエンコーディング
 
-# In[113]:
+# In[239]:
 
-
-# カテゴリ変数のエンコーディング
-
-# lightGBMに突っ込むためには数値型(またはbool型)である必要があるので、object型のデータをlabel encodingで処理する
-# https://qiita.com/Hyperion13fleet/items/afa49a84bd5db65ffc31　こっちのほうが便利？
 
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
@@ -449,36 +438,112 @@ from sklearn.linear_model import Ridge, Lasso
 from lightgbm import LGBMRegressor, plot_tree
 from sklearn.metrics import root_mean_squared_error as rmse
 from sklearn.metrics import mean_absolute_percentage_error as mape
-from sklearn.preprocessing import PowerTransformer
+from sklearn.preprocessing import StandardScaler, PowerTransformer
+
+# 1. カテゴリごとのユニークな値を取得
+category_mappings = {col: set(df_all_data[col].dropna().unique()) for col in df_all_data.select_dtypes(include=['object', 'category']).columns}
+
+# 2. 同じカテゴリーリストを持つ変数をグループ化
+from collections import defaultdict
+
+grouped_categories = defaultdict(list)
+for col, categories in category_mappings.items():
+    grouped_categories[frozenset(categories)].append(col)
+
+# 結果の表示
+for categories, columns in grouped_categories.items():
+    print("カテゴリーリスト:", categories)
+    print("同じマッピングを持つ変数:", columns)
+    print()
+
+
+# In[240]:
+
+
+# OrdinalEncoderを使って順序関係のありそうなカテゴリ変数をエンコーディング
+
+# # HouseStyleには順序関係あるかどうか、かなり微妙
+# # OE_cols = ["HouseStyle"]
+# # encoder = OrdinalEncoder(categories=[['1Story', '1.5Unf', '1.5Fin', '2Story', '2.5Unf', '2.5Fin', 'SFoyer', 'SLvl']] * len(OE_cols))
+# # df_all_data[OE_cols] = encoder.fit_transform(df_all_data[OE_cols])
+
+# OE_cols = ["ExterQual", "KitchenQual", "ExterCond", "HeatingQC", "BsmtQual", "BsmtCond", "FireplaceQu", "GarageQual", "GarageCond"]
+# encoder = OrdinalEncoder(categories=[['None', 'Po', 'Fa', 'TA', 'Gd', 'Ex']] * len(OE_cols))
+# df_all_data[OE_cols] = encoder.fit_transform(df_all_data[OE_cols])
+
+# OE_cols = ["BsmtExposure"]
+# encoder = OrdinalEncoder(categories=[['None', 'No', 'Mn', 'Av', 'Gd']] * len(OE_cols))
+# df_all_data[OE_cols] = encoder.fit_transform(df_all_data[OE_cols])
+
+# OE_cols = ["BsmtFinType1", "BsmtFinType2"]
+# encoder = OrdinalEncoder(categories=[['None', 'Unf', 'LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ']] * len(OE_cols))
+# df_all_data[OE_cols] = encoder.fit_transform(df_all_data[OE_cols])
+
+# OE_cols = ["GarageFinish"]
+# encoder = OrdinalEncoder(categories=[['None', 'Unf', 'RFn', 'Fin']] * len(OE_cols))
+# df_all_data[OE_cols] = encoder.fit_transform(df_all_data[OE_cols])
+
+# display(df_all_data)
+
+
+# 各カラムのカテゴリーマッピングを辞書にまとめる
+ordinal_mappings = {
+    ("ExterQual", "KitchenQual", "ExterCond", "HeatingQC", "BsmtQual", "BsmtCond", "FireplaceQu", "GarageQual", "GarageCond"): 
+    ['None', 'Po', 'Fa', 'TA', 'Gd', 'Ex'],
+    
+    ("BsmtExposure",): 
+    ['None', 'No', 'Mn', 'Av', 'Gd'],
+    
+    ("BsmtFinType1", "BsmtFinType2"): 
+    ['None', 'Unf', 'LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ'],
+    
+    ("GarageFinish",): 
+    ['None', 'Unf', 'RFn', 'Fin']
+}
+
+# 各カテゴリーマッピングを適用
+for cols, categories in ordinal_mappings.items():
+    encoder = OrdinalEncoder(categories=[categories] * len(cols))
+    df_all_data[list(cols)] = encoder.fit_transform(df_all_data[list(cols)])
+
+display(df_all_data)
+
+
+# In[241]:
+
+
+# 残りのカテゴリ変数をone-hot encodingする
 
 # object型のデータが入っている列を抽出
 object_cols = df_all_data.select_dtypes(include="object").columns
-# エンコード前に退避
-df_all_data_pre_encoding = df_all_data.copy()
 
 # one-hot encoding
 df_all_data = pd.get_dummies(df_all_data).reset_index(drop=True)
 
-print(f"{df_all_data_pre_encoding.shape=}")
-display(df_all_data_pre_encoding.head(3))
-print(f"{df_all_data.shape=}")
-display(df_all_data.head(3))
+display(df_all_data)
 
 
-# ## 数値変換
+# ## 数値変換(目的変数、特徴量)
 
-# In[114]:
+# In[242]:
 
 
-# まず、df_all_dataをdf_trainとdf_testに分割し直す
+# 目的変数SalePriceの数値変換(box-cox)
+
+# まず、ここまで使ってきたdf_all_dataをdf_trainとdf_testに分割し直す
 ntrain = len(df_train)
 
 df_train = df_all_data[:ntrain]
 df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
 
-# 訓練データを特徴量と目的変数に分ける(本当はもっと最初の方にやっておくべきだったような…)
+# 全データ、訓練データを特徴量と目的変数に分ける(本当はもっと最初の方にやっておくべきだったような…)
+df_all_data_features = df_all_data.drop(["SalePrice"], axis=1)
 df_train_features = df_train.drop(["SalePrice"], axis=1)
 SalePrice = df_train["SalePrice"]
+
+print("boxcox前")
+print(f"{stats.skew(SalePrice)=}")
+print(f"{stats.kurtosis(SalePrice)=}")
 
 # SalePriceに対してBox-Cox変換の実行
 SalePrice_boxcox, lambda_SalePrice_boxcox = stats.boxcox(SalePrice)
@@ -486,44 +551,65 @@ SalePrice_boxcox, lambda_SalePrice_boxcox = stats.boxcox(SalePrice)
 # 変換後のSalePriceを新しいDataFrameに保存し、元のインデックスを保持
 df_SalePrice_boxcox = pd.DataFrame(SalePrice_boxcox, index=SalePrice.index, columns=["SalePrice_boxcox"])
 
-# λ (lambda) 値の表示
+print("boxcox後")
+print(f"{stats.skew(SalePrice_boxcox)=}")
+print(f"{stats.kurtosis(SalePrice_boxcox)=}")
 print("Lambda value used for transformation:", lambda_SalePrice_boxcox)
 
-# 変換後のデータフレームを表示
-display(df_SalePrice_boxcox.head())
+# plotlyではkdeを描写するのが面倒っぽいのでseabornで描写
+fig, ax = plt.subplots(1, 2,figsize=(10, 4))
+fig.suptitle("SalePriceの様子_boxcox後")
+
+sns.histplot(SalePrice_boxcox, stat="density", kde=True, ax=ax[0])
+ax[0].set_title("ヒストグラムと正規分布(黒線)")
+ax[0].tick_params(axis="x", labelsize=8, rotation=20)
+
+xmin, xmax = ax[0].get_xlim()
+x = np.linspace(xmin, xmax, 100)
+y_norm = stats.norm.pdf(x, np.mean(SalePrice_boxcox), np.std(SalePrice_boxcox))
+ax[0].plot(x, y_norm, "k", linewidth=1)
+
+stats.probplot(SalePrice_boxcox, plot=ax[1])
+ax[1].set_title("正規確率プロット")
+
+plt.tight_layout()
+plt.show()
 
 
-# In[115]:
+# In[243]:
 
+
+# 特徴量の数値変換(yeo-johnson+標準化)
 
 # 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う
-numeric_features = df_train_features.select_dtypes(include="number").columns
+numeric_features = df_all_data_features.select_dtypes(include="number").columns
 
-skewness = df_train[numeric_features].skew()
+skewness = df_all_data_features[numeric_features].skew()
 high_skew_features = skewness[skewness > 0.75].index
 
 # yeo-johnson変換器を作成。学習
 pt = PowerTransformer(method="yeo-johnson")
-pt.fit(df_train_features[high_skew_features])
-
-# 訓練データにyeo-johnson変換を実行。boxcoxを行った
+pt.fit(df_all_data_features[high_skew_features])
+# 訓練データにyeo-johnson変換を実行
 df_train_features[high_skew_features] = pt.transform(df_train_features[high_skew_features])
-df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
-
 # テストデータにyeo-johnson変換を実行
 df_test[high_skew_features] = pt.transform(df_test[high_skew_features])
 
-# df_lambdas = pd.DataFrame({
-#     "col": high_skew_features,
-#     "lambda": pt.lambdas_
-# })
-# print("尖度が大きい特徴量(及び目的変数)と、yeo-johnson時のlambdaの値")
-# display(df_lambdas)
+# 標準化器を作成。学習
+scaler = StandardScaler()
+scaler.fit(df_all_data_features[numeric_features])
+# 訓練データに標準化を実行
+df_train_features[numeric_features] = scaler.transform(df_train_features[numeric_features])
+# テストデータに標準化を実行
+df_test[numeric_features] = scaler.transform(df_test[numeric_features])
+
+# 訓練データにboxcoxしたSalePriceを結合
+df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
 
 
 # # 3. モデル構築
 
-# In[121]:
+# In[244]:
 
 
 # モデル構築
@@ -532,11 +618,11 @@ X = df_train.drop(["SalePrice_boxcox"], axis=1)
 y = df_train["SalePrice_boxcox"]
 
 # クロスバリデーション
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
+kf = KFold(n_splits=10, shuffle=True, random_state=42)
 
 params_lgbm = {}
 params_ridge = {"alpha": 1.0}
-params_lasso = {"alpha": 0.001}
+params_lasso = {"alpha": 1.0}
 # params_lgbm = {"max_depth": 19, "learning_rate": 0.1}
 # パラメータチューニングにはoptunaというのを使うと良いらしい
 # https://qiita.com/tetsuro731/items/a19a85fd296d4b87c367
@@ -569,6 +655,7 @@ for model in models:
             print("予測値に0以下の値が含まれています。スコア算出のためこれらの予測値は十分小さい正の値1e-6に変換されます。")
             y_pred  = np.maximum(y_pred, 1e-6)    
 
+        # スコア算出のため、予測値をboxcoxの逆変換で元に戻す
         y_pred_inv_boxcox = special.inv_boxcox(y_pred, lambda_SalePrice_boxcox)
         y_va_inv_boxcox = special.inv_boxcox(y_va, lambda_SalePrice_boxcox)
 
@@ -588,13 +675,17 @@ for model in models:
 
 # # 4. 提出
 
-# In[117]:
+# In[ ]:
 
 
 # 提出用のデータを出力
-model = Lasso(**params_lasso)
+model = LGBMRegressor(**params_lgbm)
+# model = Ridge(**params_ridge)
+# model = Lasso(**params_lasso)
+
 model.fit(X, y)
 pred = model.predict(df_test)
+# 予測値をboxcoxの逆変換で元に戻す
 sub_pred = special.inv_boxcox(pred, lambda_SalePrice_boxcox)
 flag_neg = np.any(sub_pred < 0)
 if flag_neg:
@@ -604,7 +695,7 @@ submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
 submission.to_csv("train_test_submission/submission.csv", index=False)
 
 
-# In[118]:
+# In[246]:
 
 
 # # 学習結果の図示(lightGBM採用時)
