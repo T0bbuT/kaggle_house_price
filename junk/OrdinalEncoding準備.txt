@@ -1,0 +1,34 @@
+カテゴリーリスト: frozenset({'1Story', '2.5Unf', 'SFoyer', '1.5Unf', '1.5Fin', 'SLvl', '2Story', '2.5Fin'})
+同じマッピングを持つ変数: ['HouseStyle']
+
+====
+
+カテゴリーリスト: frozenset({'Gd', 'Ex', 'Fa', 'TA'})
+同じマッピングを持つ変数: ['ExterQual', 'KitchenQual']
+
+カテゴリーリスト: frozenset({'Fa', 'Ex', 'Gd', 'Po', 'TA'})
+同じマッピングを持つ変数: ['ExterCond', 'HeatingQC']
+
+カテゴリーリスト: frozenset({'Fa', 'None', 'Gd', 'Ex', 'TA'})
+同じマッピングを持つ変数: ['BsmtQual']
+
+カテゴリーリスト: frozenset({'Fa', 'None', 'Gd', 'Po', 'TA'})
+同じマッピングを持つ変数: ['BsmtCond']
+
+カテゴリーリスト: frozenset({'Fa', 'Ex', 'None', 'Gd', 'Po', 'TA'})
+同じマッピングを持つ変数: ['FireplaceQu', 'GarageQual', 'GarageCond']
+
+===
+
+カテゴリーリスト: frozenset({'No', 'Av', 'Mn', 'None', 'Gd'})
+同じマッピングを持つ変数: ['BsmtExposure']
+
+===
+
+カテゴリーリスト: frozenset({'Rec', 'ALQ', 'None', 'BLQ', 'GLQ', 'LwQ', 'Unf'})
+同じマッピングを持つ変数: ['BsmtFinType1', 'BsmtFinType2']
+
+===
+
+カテゴリーリスト: frozenset({'Fin', 'None', 'RFn', 'Unf'})
+同じマッピングを持つ変数: ['GarageFinish']
