@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[215]:
+# In[3]:
 
 
 import os
@@ -41,19 +41,20 @@ print(df_test.info())
 
 
 
-# # ydata_profilingを使う場合。時間かかるので注意
+# ydata_profilingを使う場合。時間かかるので注意
+# minimal=Falseにすると更に時間がかかり、出力されるhtmlも非常に重くなるなので注意
 
-# if not os.path.exists("ydata_profiling"):
-#     os.makedirs("ydata_profiling")
+if not os.path.exists("ydata_profiling"):
+    os.makedirs("ydata_profiling")
 
-# profile = ProfileReport(df_all_data, minimal=True)
-# profile.to_file("ydata_profiling/kaggle_houseprices_minimal.html")
+profile = ProfileReport(df_all_data, minimal=True)
+profile_path = "ydata_profiling/kaggle_houseprices_minimal.html"
+profile.to_file(profile_path)
 
-# # profile = ProfileReport(df_all_data, minimal=False)
-# # profile.to_file("ydata_profiling/kaggle_houseprices.html")
+print(f"{profile_path}にレポートが出力されました。")
 
 
-# In[216]:
+# In[ ]:
 
 
 SalePrice = df_train["SalePrice"]
@@ -67,7 +68,7 @@ print(df_train["SalePrice"].describe())
 print(f"{skewness_SalePrice=}")
 print(f"{kurtosis_SalePrice=}")
 
-# plotlyではkdeを描写するのが面倒っぽいのでseabornで描写
+# plotlyではkdeを描写するのが面倒なのでseabornで描写
 fig, ax = plt.subplots(1, 2,figsize=(10, 4))
 
 sns.histplot(SalePrice, stat="density", kde=True, ax=ax[0])
@@ -86,7 +87,7 @@ plt.tight_layout()
 plt.show()
 
 
-# In[217]:
+# In[5]:
 
 
 df_all_data_features = df_all_data.drop(["SalePrice"], axis=1)
@@ -102,7 +103,7 @@ df_skew_kurt = pd.DataFrame({
 display(df_skew_kurt.sort_values(by="Skewness", ascending=False).head(10))
 
 
-# In[218]:
+# In[6]:
 
 
 corr_matrix = df_train.corr(numeric_only=True)
@@ -118,7 +119,7 @@ plt.suptitle("訓練データの相関係数(絶対値)行列_カテゴリ変数
 plt.show()
 
 
-# In[219]:
+# In[7]:
 
 
 # plotly版。インデックス番号が一目で確認できる
@@ -174,7 +175,7 @@ fig.show()
 
 # ## 外れ値処理
 
-# In[220]:
+# In[8]:
 
 
 # 外れ値処理(訓練データ)
@@ -201,7 +202,7 @@ fig.show()
 
 # ## 欠損値補完・列削除
 
-# In[221]:
+# In[9]:
 
 
 # 欠損値処理(訓練データ、テストデータ)
@@ -229,7 +230,7 @@ df_missing_value_description.to_csv(
 display(df_missing_value_description.head(15))
 
 
-# In[222]:
+# In[10]:
 
 
 # LotFrontageの欠損割合が多いが、何で補完するかが難しい。どれかのカテゴリ変数に対する傾向がないか調べてみる
@@ -270,7 +271,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[223]:
+# In[11]:
 
 
 # x="Neighborhood", y="LotFrontage"が傾向を捉えていそう。詳しく確認する
@@ -288,7 +289,7 @@ fig.update_layout(
 fig.show()
 
 
-# In[224]:
+# In[12]:
 
 
 # 各地域"Neighborhood"の"LotFrontage"の中央値で欠損値を補完する
@@ -315,7 +316,7 @@ def fillnaLot(row):
         return row["LotFrontage"]
 
 
-# In[225]:
+# In[13]:
 
 
 # LotFrontageの補完
@@ -379,7 +380,7 @@ df_all_data = df_all_data.drop(columns=cols_drop)
 
 # ## 新たな特徴量の作成(訓練データ、テストデータ)
 
-# In[226]:
+# In[14]:
 
 
 # 新しい特徴量の作成
@@ -428,7 +429,7 @@ df_all_data[[
 
 # ## カテゴリ変数のエンコーディング
 
-# In[227]:
+# In[15]:
 
 
 from sklearn.preprocessing import OrdinalEncoder
@@ -457,7 +458,7 @@ for categories, columns in grouped_categories.items():
     print()
 
 
-# In[228]:
+# In[16]:
 
 
 # 変換前
@@ -491,7 +492,7 @@ df_all_data = df_all_data.apply(lambda x: x.cat.codes if x.dtype.name == 'catego
 display(df_all_data.head(5))
 
 
-# In[229]:
+# In[17]:
 
 
 # 残りのカテゴリ変数をone-hot encodingする
@@ -507,7 +508,7 @@ display(df_all_data)
 
 # ## 数値変換(目的変数、特徴量)
 
-# In[230]:
+# In[ ]:
 
 
 # 目的変数SalePriceの数値変換(box-cox)
@@ -518,7 +519,7 @@ ntrain = len(df_train)
 df_train = df_all_data[:ntrain]
 df_test = df_all_data[ntrain:].drop(["SalePrice"], axis=1)
 
-# 全データ、訓練データを特徴量と目的変数に分ける(本当はもっと最初の方にやっておくべきだったような…)
+# 全データ、訓練データを特徴量と目的変数に分ける
 df_all_data_features = df_all_data.drop(["SalePrice"], axis=1)
 df_train_features = df_train.drop(["SalePrice"], axis=1)
 SalePrice = df_train["SalePrice"]
@@ -538,7 +539,6 @@ print(f"{stats.skew(SalePrice_boxcox)=}")
 print(f"{stats.kurtosis(SalePrice_boxcox)=}")
 print("Lambda value used for transformation:", lambda_SalePrice_boxcox)
 
-# plotlyではkdeを描写するのが面倒っぽいのでseabornで描写
 fig, ax = plt.subplots(1, 2,figsize=(10, 4))
 fig.suptitle("SalePriceの様子_boxcox後")
 
@@ -558,10 +558,10 @@ plt.tight_layout()
 plt.show()
 
 
-# In[231]:
+# In[19]:
 
 
-# 特徴量の数値変換(yeo-johnson+標準化)
+# 特徴量の数値変換(yeo-johnson)
 
 # 特徴量の数値変換は、bool型を除いた数値型の特徴量についてのみ行う
 numeric_features = df_all_data_features.select_dtypes(include="number").columns
@@ -577,14 +577,6 @@ df_train_features[high_skew_features] = pt.transform(df_train_features[high_skew
 # テストデータにyeo-johnson変換を実行
 df_test[high_skew_features] = pt.transform(df_test[high_skew_features])
 
-# # 標準化器を作成。学習
-# scaler = StandardScaler()
-# scaler.fit(df_all_data_features[numeric_features])
-# # 訓練データに標準化を実行
-# df_train_features[numeric_features] = scaler.transform(df_train_features[numeric_features])
-# # テストデータに標準化を実行
-# df_test[numeric_features] = scaler.transform(df_test[numeric_features])
-
 # 訓練データにboxcoxしたSalePriceを結合
 df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
 
@@ -593,7 +585,7 @@ df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
 
 # ## モデルのパラメータチューニング
 
-# In[232]:
+# In[20]:
 
 
 import optuna
@@ -677,8 +669,11 @@ for model_name, params in best_params_dict.items():
 
 # # 4. 提出
 
-# In[233]:
+# In[21]:
 
+
+if not os.path.exists("train_test_submission"):
+    os.makedirs("train_test_submission")
 
 for model_name in ['LGBMRegressor', 'Ridge', 'Lasso']:
     params = best_params_dict[model_name]
@@ -694,13 +689,14 @@ for model_name in ['LGBMRegressor', 'Ridge', 'Lasso']:
     # 学習・予測
     model.fit(X, y)
     pred = model.predict(df_test)
-
     sub_pred = special.inv_boxcox(pred, lambda_SalePrice_boxcox)
     sub_pred = np.maximum(sub_pred, 1e-6)
 
     # 提出データ作成
     submission = pd.DataFrame({"Id": df_test_Id, "SalePrice": sub_pred})
-    submission.to_csv(f"train_test_submission/submission_{model_name}.csv", index=False)
+    submission_path = f"train_test_submission/submission_{model_name}.csv"
+    submission.to_csv(submission_path, index=False)
+    print(f"{model_name}の提出データが{submission_path}に出力されました。")
 
 
 # In[ ]:

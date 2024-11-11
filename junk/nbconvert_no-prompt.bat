@@ -1,1 +1,0 @@
-jupyter nbconvert --to script --no-prompt Ä•ªÍ.ipynb
