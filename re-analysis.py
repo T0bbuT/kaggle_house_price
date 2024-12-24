@@ -3,7 +3,7 @@
 
 # # 1. EDA
 
-# In[1]:
+# In[ ]:
 
 
 import os
@@ -38,8 +38,6 @@ print("-" * 10, "df_train.info()", "-" * 10)
 print(df_train.info())
 print("\n", "-" * 10, "df_test.info()", "-" * 10)
 print(df_test.info())
-
-
 
 # # ydata_profilingを使う場合。時間かかるので注意
 # # minimal=Falseにすると更に時間がかかり、出力されるhtmlも非常に重くなるなので注意
@@ -585,7 +583,7 @@ df_train = pd.concat([df_train_features, df_SalePrice_boxcox], axis=1)
 
 # ## モデルのパラメータチューニング
 
-# In[22]:
+# In[18]:
 
 
 import optuna
@@ -608,7 +606,7 @@ def objective(trial, model_name):
     # モデルごとのパラメータ範囲を設定
     if model_name == 'LGBMRegressor':
         params = {
-            'max_depth': trial.suggest_int('max_depth', 3, 10),
+            'max_depth': trial.suggest_int('max_depth', 2, 10),
             'learning_rate': trial.suggest_float('learning_rate', 1e-4, 0.1, log=True),  # 対数スケールで探索
             'n_estimators': trial.suggest_int('n_estimators', 50, 500),
             'subsample': trial.suggest_float('subsample', 0.6, 1.0)  # 連続範囲で探索
@@ -671,9 +669,49 @@ for model_name, params in best_params_dict.items():
     print(f"{model_name}: {params}")
 
 
+# In[19]:
+
+
+# MAPEの計算関数
+def mean_absolute_percentage_error(y_true, y_pred):
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+
+# 最良パラメータを使ってMAPEを計算
+for model_name, best_params in best_params_dict.items():
+    if model_name == 'LGBMRegressor':
+        model = LGBMRegressor(**best_params, verbose=-1)
+    elif model_name == 'Ridge':
+        model = Ridge(**best_params)
+    elif model_name == 'Lasso':
+        model = Lasso(**best_params, max_iter=100000)
+    
+    # クロスバリデーションでMAPEを計算
+    mape_scores = []
+    for fold_idx, (tr_idx, va_idx) in enumerate(kf.split(X)):
+        X_tr, X_va = X.iloc[tr_idx], X.iloc[va_idx]
+        y_tr, y_va = y.iloc[tr_idx], y.iloc[va_idx]
+        
+        model.fit(X_tr, y_tr)
+        y_pred = model.predict(X_va)
+        
+        # 負の値を回避
+        y_pred = np.maximum(y_pred, 1e-6)
+
+        # 逆Box-Cox変換
+        y_pred_inv_boxcox = special.inv_boxcox(y_pred, lambda_SalePrice_boxcox)
+        y_va_inv_boxcox = special.inv_boxcox(y_va, lambda_SalePrice_boxcox)
+        
+        # MAPEを計算
+        mape = mean_absolute_percentage_error(y_va_inv_boxcox, y_pred_inv_boxcox)
+        mape_scores.append(mape)
+    
+    # 平均MAPEを表示
+    print(f"{model_name}の平均MAPE: {np.mean(mape_scores):.2f}%")
+
+
 # # 4. 提出
 
-# In[23]:
+# In[20]:
 
 
 if not os.path.exists("train_test_submission"):
