@@ -1,10 +1,11 @@
 /data
 /junk/*.html
 /notebooks/*.ipynb
+/junk/ydata_profiling
+/junk/欠損値処理
+/notebooks/py
 
 # 例外リスト
 !/data/input/test.csv
 !/data/input/train.csv
 !/data/output/sample_submission.csv
-/junk/ydata_profiling
-/junk/欠損値処理
