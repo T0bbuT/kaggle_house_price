@@ -1,5 +1,6 @@
 /data
-
+/junk/*.html
+/notebooks/*.ipynb
 
 # 例外リスト
 !/data/input/test.csv
