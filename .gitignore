@@ -6,3 +6,5 @@
 !/data/input/test.csv
 !/data/input/train.csv
 !/data/output/sample_submission.csv
+/junk/ydata_profiling
+/junk/欠損値処理
