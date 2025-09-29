@@ -1,0 +1,7 @@
+/data
+
+
+# 例外リスト
+!/data/input/test.csv
+!/data/input/train.csv
+!/data/output/sample_submission.csv
