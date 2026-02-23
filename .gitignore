@@ -1,6 +1,6 @@
 /data
 /junk/*.html
-/notebooks/*.ipynb
+# /notebooks/*.ipynb
 /junk/ydata_profiling
 /junk/欠損値処理
 /notebooks/py
