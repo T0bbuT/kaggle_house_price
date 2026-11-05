@@ -1,7 +1,7 @@
 [project]
-name = "house-prices-advanced-regression-techniques"
+name = "kaggle-house-prices"
 version = "0.1.0"
-description = "Add your description here"
+description = "Kaggle「House Prices - Advanced Regression Techniques」の住宅価格予測分析"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -17,4 +17,14 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "scipy>=1.17.1",
     "seaborn>=0.13.2",
+    "xgboost>=3.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.4.0",
+    "nbconvert>=7.16.0",
+]
+
+[tool.uv]
+package = false

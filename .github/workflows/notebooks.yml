@@ -1,0 +1,39 @@
+name: notebooks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  execute:
+    name: ノートブックを最初から最後まで実行
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: 依存関係をインストール（uv.lock どおり）
+        run: uv sync --locked
+
+      - name: ノートブックを実行
+        run: |
+          for nb in notebooks/*.ipynb; do
+            echo "::group::$nb"
+            uv run jupyter nbconvert --to notebook --execute "$nb" \
+              --output-dir executed --ExecutePreprocessor.timeout=1800
+            echo "::endgroup::"
+          done
+
+      - name: 実行済みノートブックと提出用CSVを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebooks
+          path: |
+            executed/
+            outputs/submissions/
