@@ -15,10 +15,5 @@ Thumbs.db
 # ノートブックが生成するファイル（提出用CSV・作業用CSV・プロファイリングレポートなど）
 /outputs/
 
-# データ: コンペ配布データのみ管理し、それ以外は管理しない
-/data/*
-!/data/input/
-/data/input/*
-!/data/input/train.csv
-!/data/input/test.csv
-!/data/input/sample_submission.csv
+# データ: Kaggle の規約に従い、コンペ配布データはリポジトリに含めない（README の手順でダウンロード）
+/data/

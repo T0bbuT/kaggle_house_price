@@ -21,6 +21,23 @@ jobs:
       - name: 依存関係をインストール（uv.lock どおり）
         run: uv sync --locked
 
+      - name: Kaggle からデータをダウンロード
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          # 未登録の Secret は空文字になるので、空の変数は消しておく
+          for v in KAGGLE_USERNAME KAGGLE_KEY KAGGLE_API_TOKEN; do
+            [ -z "${!v}" ] && unset "$v"
+          done
+          if [ -z "${KAGGLE_API_TOKEN:-}" ] && { [ -z "${KAGGLE_USERNAME:-}" ] || [ -z "${KAGGLE_KEY:-}" ]; }; then && { [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; }; then
+            echo "::error::Kaggle の認証情報が未設定です。リポジトリの Secrets に KAGGLE_API_TOKEN（または KAGGLE_USERNAME と KAGGLE_KEY）を登録してください。"
+            exit 1
+          fi
+          uv run kaggle competitions download -c house-prices-advanced-regression-techniques -p data/input --unzip
+          ls -l data/input
+
       - name: ノートブックを実行
         run: |
           for nb in notebooks/*.ipynb; do

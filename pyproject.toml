@@ -23,6 +23,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "jupyterlab>=4.4.0",
+    "kaggle>=2.2.5",
     "nbconvert>=7.16.0",
 ]
 

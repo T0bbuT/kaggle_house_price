@@ -70,9 +70,25 @@ cd kaggle_house_price
 uv sync
 ```
 
-`.venv/` に仮想環境が作られます。データ（`data/input/`）はリポジトリに含まれているため、別途ダウンロードは不要です。
+`.venv/` に仮想環境が作られます。
 
-### 3. ノートブックを実行
+### 3. データをダウンロード
+
+コンペのデータは Kaggle の規約に従いリポジトリには含めていないため、[Kaggle CLI](https://github.com/Kaggle/kaggle-api)（`uv sync` で一緒に入ります）で取得します。
+
+1. Kaggle にログインし、[コンペのページ](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/rules) でルールに同意する
+2. [Kaggle の Settings](https://www.kaggle.com/settings) の「API」から API トークンを作成し、表示された手順どおりに保存する（`~/.kaggle/` に置くか、環境変数に設定）
+3. 次のコマンドでダウンロードする
+
+```bash
+uv run kaggle competitions download -c house-prices-advanced-regression-techniques -p data/input --unzip
+```
+
+`data/input/` に `train.csv`, `test.csv`, `sample_submission.csv`, 公式の特徴量説明 `data_description.txt` が展開されます（`data/` は Git 管理外）。
+
+ブラウザで [Data タブ](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/data) から zip をダウンロードし、`data/input/` に展開しても構いません。
+
+### 4. ノートブックを実行
 
 ```bash
 # JupyterLab で開く
@@ -86,16 +102,15 @@ VS Code を使う場合は、ノートブックのカーネルに `.venv` の Py
 
 提出用 CSV は `outputs/submissions/` に出力されます（`outputs/` は Git 管理外）。
 
-GitHub Actions でも push / PR ごとに両方のノートブックを最初から実行し、壊れていないことを確認しています。
+GitHub Actions でも push / PR ごとに Kaggle からデータを取得して両方のノートブックを最初から実行し、壊れていないことを確認しています（リポジトリの Secrets に Kaggle の API トークン `KAGGLE_API_TOKEN`、または `KAGGLE_USERNAME` と `KAGGLE_KEY` が必要です）。
 
 ## ディレクトリ構成
 
 ```
 .
 ├── data/
-│   └── input/               # コンペ配布データ（train.csv, test.csv, sample_submission.csv）
+│   └── input/               # コンペ配布データの置き場所（Git 管理外、手順 3 でダウンロード）
 ├── docs/
-│   ├── data_description.txt     # 公式の特徴量説明（英語）
 │   ├── data_description_jp.csv  # 特徴量説明の日本語訳（ノートブックから参照）
 │   ├── images/                  # README 用の図
 │   └── notes/                   # 分析中の作業メモ
