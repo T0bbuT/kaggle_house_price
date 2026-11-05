@@ -29,9 +29,9 @@ jobs:
         run: |
           # 未登録の Secret は空文字になるので、空の変数は消しておく
           for v in KAGGLE_USERNAME KAGGLE_KEY KAGGLE_API_TOKEN; do
-            [ -z "${!v}" ] && unset "$v"
+            if [ -z "${!v}" ]; then unset "$v"; fi
           done
-          if [ -z "${KAGGLE_API_TOKEN:-}" ] && { [ -z "${KAGGLE_USERNAME:-}" ] || [ -z "${KAGGLE_KEY:-}" ]; }; then && { [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; }; then
+          if [ -z "${KAGGLE_API_TOKEN:-}" ] && { [ -z "${KAGGLE_USERNAME:-}" ] || [ -z "${KAGGLE_KEY:-}" ]; }; then
             echo "::error::Kaggle の認証情報が未設定です。リポジトリの Secrets に KAGGLE_API_TOKEN（または KAGGLE_USERNAME と KAGGLE_KEY）を登録してください。"
             exit 1
           fi
