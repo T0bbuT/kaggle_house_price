@@ -1,0 +1,56 @@
+name: notebooks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  execute:
+    name: ノートブックを最初から最後まで実行
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: 依存関係をインストール（uv.lock どおり）
+        run: uv sync --locked
+
+      - name: Kaggle からデータをダウンロード
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          # 未登録の Secret は空文字になるので、空の変数は消しておく
+          for v in KAGGLE_USERNAME KAGGLE_KEY KAGGLE_API_TOKEN; do
+            if [ -z "${!v}" ]; then unset "$v"; fi
+          done
+          if [ -z "${KAGGLE_API_TOKEN:-}" ] && { [ -z "${KAGGLE_USERNAME:-}" ] || [ -z "${KAGGLE_KEY:-}" ]; }; then
+            echo "::error::Kaggle の認証情報が未設定です。リポジトリの Secrets に KAGGLE_API_TOKEN（または KAGGLE_USERNAME と KAGGLE_KEY）を登録してください。"
+            exit 1
+          fi
+          uv run kaggle competitions download -c house-prices-advanced-regression-techniques -p data/input --unzip
+          ls -l data/input
+
+      - name: ノートブックを実行
+        run: |
+          for nb in notebooks/*.ipynb; do
+            echo "::group::$nb"
+            uv run jupyter nbconvert --to notebook --execute "$nb" \
+              --output-dir executed --ExecutePreprocessor.timeout=1800
+            echo "::endgroup::"
+          done
+
+      - name: 実行済みノートブックと提出用CSVを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebooks
+          path: |
+            executed/
+            outputs/submissions/

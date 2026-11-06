@@ -1,11 +1,19 @@
-/data
-/junk/*.html
-# /notebooks/*.ipynb
-/junk/ydata_profiling
-/junk/欠損値処理
-/notebooks/py
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
 
-# 例外リスト
-!/data/input/test.csv
-!/data/input/train.csv
-!/data/output/sample_submission.csv
+# Jupyter
+.ipynb_checkpoints/
+
+# エディタ / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ノートブックが生成するファイル（提出用CSV・作業用CSV・プロファイリングレポートなど）
+/outputs/
+
+# データ: Kaggle の規約に従い、コンペ配布データはリポジトリに含めない（README の手順でダウンロード）
+/data/
